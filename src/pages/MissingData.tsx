@@ -261,7 +261,7 @@ const MissingData = () => {
 
       {/* Floating sticky script panel */}
       {script && (
-        <div className="fixed bottom-6 right-6 z-50 animate-fade-in" style={{ maxWidth: "420px", width: "calc(100vw - 48px)" }}>
+        <div className="fixed top-20 right-6 z-50 animate-fade-in" style={{ maxWidth: "400px", width: "calc(100vw - 48px)" }}>
           <div className="rounded-2xl border border-border bg-card shadow-2xl shadow-primary/10 overflow-hidden">
             {/* Header — always visible */}
             <button
