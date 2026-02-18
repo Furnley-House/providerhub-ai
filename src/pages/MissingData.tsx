@@ -1,5 +1,5 @@
 import { SectionHeader, ConfidenceBadge, EvidenceBadge } from "@/components/shared/StatusComponents";
-import { AlertCircle, CheckCircle, Upload, Loader2, Phone, Sparkles, Copy, Save, X, ExternalLink, Edit3 } from "lucide-react";
+import { AlertCircle, CheckCircle, Upload, Loader2, Phone, Sparkles, Copy, Save, X, ExternalLink, Edit3, ChevronDown, ChevronUp, MessageSquareText } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -25,6 +25,7 @@ const MissingData = () => {
   const [editValue, setEditValue] = useState("");
   const [saving, setSaving] = useState(false);
   const [dialerLoaded, setDialerLoaded] = useState(false);
+  const [scriptExpanded, setScriptExpanded] = useState(true);
 
   // Load RingCentral Embeddable widget
   useEffect(() => {
@@ -234,39 +235,78 @@ const MissingData = () => {
         </div>
       )}
 
-      {/* AI Script Generator */}
-      {(missingFields.length > 0 || reviewFields.length > 0) && (
+      {/* AI Script — Generate button (inline) */}
+      {(missingFields.length > 0 || reviewFields.length > 0) && !script && (
         <div className="mb-8 rounded-xl border border-border bg-card overflow-hidden">
-          <div className="border-b border-border bg-muted/30 px-5 py-3 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-primary" /> AI Question Script
-            </h2>
+          <div className="px-5 py-4 flex items-center justify-between">
+            <div>
+              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" /> AI Question Script
+              </h2>
+              <p className="text-xs text-muted-foreground mt-1">
+                Covers {missingFields.length} missing and {reviewFields.length} review field{reviewFields.length !== 1 ? "s" : ""}.
+              </p>
+            </div>
             <button
               onClick={generateScript}
               disabled={scriptLoading}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
             >
-              {scriptLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+              {scriptLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
               {scriptLoading ? "Generating…" : "Generate Script"}
             </button>
           </div>
-          <div className="px-5 py-3 text-xs text-muted-foreground">
-            Covers {missingFields.length} missing field{missingFields.length !== 1 ? "s" : ""} and {reviewFields.length} field{reviewFields.length !== 1 ? "s" : ""} needing verification.
-          </div>
-          {script && (
-            <div className="px-5 pb-5">
-              <div className="rounded-lg border border-border bg-info/5 p-4 relative">
-                <button
-                  onClick={copyScript}
-                  className="absolute top-3 right-3 rounded p-1 text-muted-foreground hover:bg-muted transition-colors"
+        </div>
+      )}
+
+      {/* Floating sticky script panel */}
+      {script && (
+        <div className="fixed bottom-6 right-6 z-50 animate-fade-in" style={{ maxWidth: "420px", width: "calc(100vw - 48px)" }}>
+          <div className="rounded-2xl border border-border bg-card shadow-2xl shadow-primary/10 overflow-hidden">
+            {/* Header — always visible */}
+            <button
+              onClick={() => setScriptExpanded(prev => !prev)}
+              className="w-full flex items-center justify-between px-4 py-3 bg-primary/5 border-b border-border hover:bg-primary/10 transition-colors cursor-pointer"
+            >
+              <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                <MessageSquareText className="h-4 w-4 text-primary" />
+                Call Script
+              </span>
+              <div className="flex items-center gap-1">
+                <span
+                  role="button"
+                  onClick={e => { e.stopPropagation(); copyScript(); }}
+                  className="rounded p-1 text-muted-foreground hover:bg-muted transition-colors"
                   title="Copy to clipboard"
                 >
-                  <Copy className="h-4 w-4" />
-                </button>
-                <p className="text-sm text-foreground whitespace-pre-line pr-8">{script}</p>
+                  <Copy className="h-3.5 w-3.5" />
+                </span>
+                <span
+                  role="button"
+                  onClick={e => { e.stopPropagation(); generateScript(); }}
+                  className="rounded p-1 text-muted-foreground hover:bg-muted transition-colors"
+                  title="Regenerate"
+                >
+                  {scriptLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                </span>
+                <span
+                  role="button"
+                  onClick={e => { e.stopPropagation(); setScript(null); }}
+                  className="rounded p-1 text-muted-foreground hover:bg-muted transition-colors"
+                  title="Dismiss"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </span>
+                {scriptExpanded ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronUp className="h-4 w-4 text-muted-foreground" />}
               </div>
-            </div>
-          )}
+            </button>
+            {/* Collapsible body */}
+            {scriptExpanded && (
+              <div className="max-h-[50vh] overflow-y-auto p-4">
+                <p className="text-sm text-foreground whitespace-pre-line leading-relaxed">{script}</p>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
