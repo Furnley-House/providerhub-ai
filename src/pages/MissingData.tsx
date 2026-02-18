@@ -1,6 +1,6 @@
 import { SectionHeader, ConfidenceBadge, EvidenceBadge } from "@/components/shared/StatusComponents";
 import { AlertCircle, CheckCircle, Upload, Loader2, Phone, Sparkles, Copy, Save, X, ExternalLink, Edit3, ChevronDown, ChevronUp, MessageSquareText } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -26,6 +26,38 @@ const MissingData = () => {
   const [saving, setSaving] = useState(false);
   const [dialerLoaded, setDialerLoaded] = useState(false);
   const [scriptExpanded, setScriptExpanded] = useState(true);
+  const [panelPos, setPanelPos] = useState({ x: 0, y: 80 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragOffset = useRef({ x: 0, y: 0 });
+  const panelRef = useRef<HTMLDivElement>(null);
+  const hasDragged = useRef(false);
+
+  // Initialize panel position to top-right
+  useEffect(() => {
+    setPanelPos({ x: window.innerWidth - 424, y: 80 });
+  }, []);
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    // Don't start drag on action buttons
+    if ((e.target as HTMLElement).closest('[role="button"]')) return;
+    setIsDragging(true);
+    hasDragged.current = false;
+    const rect = panelRef.current?.getBoundingClientRect();
+    dragOffset.current = { x: e.clientX - (rect?.left ?? 0), y: e.clientY - (rect?.top ?? 0) };
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  };
+
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (!isDragging) return;
+    hasDragged.current = true;
+    const newX = Math.max(0, Math.min(window.innerWidth - 400, e.clientX - dragOffset.current.x));
+    const newY = Math.max(0, Math.min(window.innerHeight - 60, e.clientY - dragOffset.current.y));
+    setPanelPos({ x: newX, y: newY });
+  };
+
+  const onPointerUp = () => {
+    setIsDragging(false);
+  };
 
   // Load RingCentral Embeddable widget
   useEffect(() => {
@@ -261,12 +293,19 @@ const MissingData = () => {
 
       {/* Floating sticky script panel */}
       {script && (
-        <div className="fixed top-20 right-6 z-50 animate-fade-in" style={{ maxWidth: "400px", width: "calc(100vw - 48px)" }}>
+        <div
+          ref={panelRef}
+          className="fixed z-50 animate-fade-in"
+          style={{ left: panelPos.x, top: panelPos.y, width: 400 }}
+        >
           <div className="rounded-2xl border border-border bg-card shadow-2xl shadow-primary/10 overflow-hidden">
-            {/* Header — always visible */}
-            <button
-              onClick={() => setScriptExpanded(prev => !prev)}
-              className="w-full flex items-center justify-between px-4 py-3 bg-primary/5 border-b border-border hover:bg-primary/10 transition-colors cursor-pointer"
+            {/* Draggable header */}
+            <div
+              onPointerDown={onPointerDown}
+              onPointerMove={onPointerMove}
+              onPointerUp={onPointerUp}
+              onClick={() => { if (!hasDragged.current) setScriptExpanded(prev => !prev); }}
+              className={`w-full flex items-center justify-between px-4 py-3 bg-primary/5 border-b border-border hover:bg-primary/10 transition-colors select-none ${isDragging ? "cursor-grabbing" : "cursor-grab"}`}
             >
               <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
                 <MessageSquareText className="h-4 w-4 text-primary" />
@@ -299,7 +338,7 @@ const MissingData = () => {
                 </span>
                 {scriptExpanded ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronUp className="h-4 w-4 text-muted-foreground" />}
               </div>
-            </button>
+            </div>
             {/* Collapsible body */}
             {scriptExpanded && (
               <div className="max-h-[50vh] overflow-y-auto p-4">
