@@ -24,6 +24,7 @@ const CedingChecklist = () => {
   const [commentFieldId, setCommentFieldId] = useState<string | null>(null);
   const [commentText, setCommentText] = useState("");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<"all" | "complete" | "needs_review" | "missing">("all");
 
   // Fetch cases that have checklist fields
   const fetchCases = useCallback(async () => {
@@ -309,26 +310,46 @@ const CedingChecklist = () => {
               style={{ width: `${pct}%` }}
             />
           </div>
-          <div className="mt-2 flex gap-6 text-xs text-muted-foreground">
-            <span>
-              <span className="inline-block h-2 w-2 rounded-full bg-success mr-1" />
+          <div className="mt-2 flex gap-2 text-xs">
+            <button
+              onClick={() => setStatusFilter("all")}
+              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 font-medium transition-colors cursor-pointer ${statusFilter === "all" ? "bg-primary/15 text-primary ring-1 ring-primary/30" : "text-muted-foreground hover:bg-muted"}`}
+            >
+              All ({total})
+            </button>
+            <button
+              onClick={() => setStatusFilter(statusFilter === "complete" ? "all" : "complete")}
+              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 font-medium transition-colors cursor-pointer ${statusFilter === "complete" ? "bg-success/15 text-success ring-1 ring-success/30" : "text-muted-foreground hover:bg-muted"}`}
+            >
+              <span className="inline-block h-2 w-2 rounded-full bg-success" />
               {complete} Complete
-            </span>
-            <span>
-              <span className="inline-block h-2 w-2 rounded-full bg-warning mr-1" />
+            </button>
+            <button
+              onClick={() => setStatusFilter(statusFilter === "needs_review" ? "all" : "needs_review")}
+              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 font-medium transition-colors cursor-pointer ${statusFilter === "needs_review" ? "bg-warning/15 text-warning ring-1 ring-warning/30" : "text-muted-foreground hover:bg-muted"}`}
+            >
+              <span className="inline-block h-2 w-2 rounded-full bg-warning" />
               {needsReview} Needs Review
-            </span>
-            <span>
-              <span className="inline-block h-2 w-2 rounded-full bg-overdue mr-1" />
+            </button>
+            <button
+              onClick={() => setStatusFilter(statusFilter === "missing" ? "all" : "missing")}
+              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 font-medium transition-colors cursor-pointer ${statusFilter === "missing" ? "bg-overdue/15 text-overdue ring-1 ring-overdue/30" : "text-muted-foreground hover:bg-muted"}`}
+            >
+              <span className="inline-block h-2 w-2 rounded-full bg-overdue" />
               {missing} Missing
-            </span>
+            </button>
           </div>
         </div>
       )}
 
       {/* Sections */}
       <div className="space-y-6">
-        {sections.map(section => (
+        {sections.map(section => {
+          const sectionFields = fields
+            .filter(f => f.section === section)
+            .filter(f => statusFilter === "all" || f.status === statusFilter);
+          if (sectionFields.length === 0) return null;
+          return (
           <div
             key={section}
             className="rounded-xl border border-border bg-card overflow-hidden"
@@ -337,8 +358,7 @@ const CedingChecklist = () => {
               <h2 className="text-sm font-semibold text-foreground">{section}</h2>
             </div>
             <div className="divide-y divide-border">
-              {fields
-                .filter(f => f.section === section)
+              {sectionFields
                 .map(field => {
                   const isEditing = editingFieldId === field.id;
 
@@ -474,7 +494,8 @@ const CedingChecklist = () => {
                 })}
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
