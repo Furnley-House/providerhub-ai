@@ -1,1 +1,4 @@
 project_id = "hyofirrqiaqcspmuzdnd"
+
+[functions.extract-policy]
+verify_jwt = false
