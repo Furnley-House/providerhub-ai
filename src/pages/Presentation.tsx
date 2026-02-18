@@ -361,11 +361,11 @@ const slides: React.FC[] = [
     <div className="flex flex-col items-center justify-center h-full bg-gradient-to-br from-[hsl(197,71%,20%)] to-[hsl(197,71%,10%)] text-white px-20">
       <h2 className="text-5xl font-bold mb-4">Next Steps</h2>
       <p className="text-xl text-white/60 mb-12">Approve a phased pilot to prove impact on the top providers and scale</p>
-      <div className="grid grid-cols-3 gap-8 w-full max-w-4xl mb-12">
+      <div className="grid grid-cols-3 gap-8 w-full max-w-4xl mb-8">
         {[
           { phase: "Phase 1 (MVP)", items: ["Case pipeline + LOA tracking", "Document inbox + AI extraction", "Auto-fill checklist + evidence", "Top 10–20 providers"] },
           { phase: "Phase 2", items: ["Missing-fields workflow", "Provider Directory rules UI", "Chase automation templates", "Adviser review & comments"] },
-          { phase: "Phase 3", items: ["RingCentral call assist", "Transcript → field auto-fill", "Analytics & Founder dashboard", "Scale to 200+ providers"] },
+          { phase: "Phase 3", items: ["RingCentral call assist", "Transcript → field auto-fill", "Analytics & Founder dashboard", "Origo integration (research phase)"] },
         ].map((p, i) => (
           <div key={i} className="rounded-xl bg-white/10 backdrop-blur p-6">
             <div className="flex items-center gap-2 mb-4">
@@ -382,6 +382,23 @@ const slides: React.FC[] = [
             </ul>
           </div>
         ))}
+      </div>
+      {/* Origo Research Insight */}
+      <div className="rounded-xl bg-white/5 border border-white/10 px-8 py-4 w-full max-w-4xl mb-6">
+        <div className="flex items-start gap-4">
+          <div className="w-10 h-10 rounded-lg bg-[hsl(38,92%,50%)]/20 flex items-center justify-center shrink-0 mt-0.5">
+            <Zap className="w-5 h-5 text-[hsl(38,92%,50%)]" />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-white flex items-center gap-2">
+              Origo — UK Fintech for LOA & Transfer Tracking
+              <span className="text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 rounded bg-[hsl(38,92%,50%)]/20 text-[hsl(38,92%,50%)]">Research</span>
+            </p>
+            <p className="text-xs text-white/50 mt-1 leading-relaxed max-w-3xl">
+              Early research suggests Origo's digital transfer platform could automate LOA submission and transfer status tracking directly with providers — potentially eliminating manual LOA chasing entirely. More POC and analysis needed before committing. Phase 3 candidate if validated.
+            </p>
+          </div>
+        </div>
       </div>
       <div className="rounded-xl bg-white/10 backdrop-blur px-8 py-5 text-center max-w-2xl">
         <p className="text-lg font-semibold">ProviderHub turns LOA & Ceding into a repeatable, auditable pipeline.</p>
