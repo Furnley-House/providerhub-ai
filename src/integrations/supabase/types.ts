@@ -44,6 +44,71 @@ export type Database = {
         }
         Relationships: []
       }
+      call_logs: {
+        Row: {
+          ai_summary: string | null
+          case_id: string | null
+          client_name: string | null
+          created_at: string
+          department: string | null
+          duration_seconds: number | null
+          fields_resolved: string[] | null
+          id: string
+          notes: string | null
+          phone_number: string
+          plan_number: string | null
+          provider_name: string
+          status: string
+          transcript: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_summary?: string | null
+          case_id?: string | null
+          client_name?: string | null
+          created_at?: string
+          department?: string | null
+          duration_seconds?: number | null
+          fields_resolved?: string[] | null
+          id?: string
+          notes?: string | null
+          phone_number: string
+          plan_number?: string | null
+          provider_name: string
+          status?: string
+          transcript?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_summary?: string | null
+          case_id?: string | null
+          client_name?: string | null
+          created_at?: string
+          department?: string | null
+          duration_seconds?: number | null
+          fields_resolved?: string[] | null
+          id?: string
+          notes?: string | null
+          phone_number?: string
+          plan_number?: string | null
+          provider_name?: string
+          status?: string
+          transcript?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_logs_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cases: {
         Row: {
           ai_extraction_date: string | null
