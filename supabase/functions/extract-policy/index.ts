@@ -60,9 +60,15 @@ serve(async (req) => {
       .download(doc.file_path);
     if (dlErr || !fileData) throw new Error("Could not download file");
 
-    // Convert to base64 for AI processing
+    // Convert to base64 for AI processing (chunked to avoid stack overflow)
     const arrayBuffer = await fileData.arrayBuffer();
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+    const bytes = new Uint8Array(arrayBuffer);
+    let binary = "";
+    const chunkSize = 8192;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+    }
+    const base64 = btoa(binary);
 
     // Build the extraction prompt
     const fieldsList = Object.entries(CHECKLIST_SECTIONS)
