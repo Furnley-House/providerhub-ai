@@ -10,6 +10,14 @@ import type { Confidence, EvidenceSource } from "@/data/seedData";
 
 type ChecklistRow = Tables<"checklist_fields">;
 type CaseRow = Tables<"cases">;
+type ProviderRow = Tables<"providers">;
+
+interface RoutingMatch {
+  department: string;
+  phone: string;
+  email?: string;
+  planPrefix: string;
+}
 
 const RINGCENTRAL_EMBEDDABLE_URL = "https://apps.ringcentral.com/integration/ringcentral-embeddable/latest/adapter.js";
 
@@ -26,6 +34,10 @@ const MissingData = () => {
   const [saving, setSaving] = useState(false);
   const [dialerLoaded, setDialerLoaded] = useState(false);
   const [scriptExpanded, setScriptExpanded] = useState(true);
+  const [provider, setProvider] = useState<ProviderRow | null>(null);
+  const [routingMatch, setRoutingMatch] = useState<RoutingMatch | null>(null);
+  const [callNumber, setCallNumber] = useState("");
+  const [showCallPrompt, setShowCallPrompt] = useState(false);
   const [panelPos, setPanelPos] = useState({ x: 0, y: 80 });
   const [isDragging, setIsDragging] = useState(false);
   const dragOffset = useRef({ x: 0, y: 0 });
@@ -102,12 +114,49 @@ const MissingData = () => {
     }
   }, [cases, selectedCaseId]);
 
+  // Fetch provider routing when case changes
   useEffect(() => {
     if (selectedCaseId) {
       fetchFields(selectedCaseId);
       setScript(null);
+      setRoutingMatch(null);
+      setProvider(null);
+      setShowCallPrompt(false);
+
+      const theCase = cases.find(c => c.id === selectedCaseId);
+      if (theCase?.provider_id) {
+        supabase.from("providers").select("*").eq("id", theCase.provider_id).single().then(({ data }) => {
+          if (data) {
+            setProvider(data);
+            matchRouting(data, theCase.plan_number);
+          }
+        });
+      } else if (theCase?.provider_name) {
+        // Fallback: match by name
+        supabase.from("providers").select("*").ilike("name", `%${theCase.provider_name}%`).limit(1).then(({ data }) => {
+          if (data?.[0]) {
+            setProvider(data[0]);
+            matchRouting(data[0], theCase.plan_number);
+          }
+        });
+      }
     }
-  }, [selectedCaseId, fetchFields]);
+  }, [selectedCaseId, fetchFields, cases]);
+
+  const matchRouting = (prov: ProviderRow, planNumber: string) => {
+    const rules = prov.routing_rules as any[];
+    if (!rules || !Array.isArray(rules)) return;
+    // Find the best matching prefix
+    const sorted = [...rules].sort((a, b) => (b.planPrefix?.length ?? 0) - (a.planPrefix?.length ?? 0));
+    const match = sorted.find(r => planNumber.toUpperCase().startsWith(r.planPrefix?.toUpperCase?.() ?? ""));
+    if (match) {
+      setRoutingMatch({ department: match.department, phone: match.phone, email: match.email, planPrefix: match.planPrefix });
+      setCallNumber(match.phone);
+    } else {
+      // Fallback to provider general phone
+      setCallNumber(prov.phone || "");
+    }
+  };
 
   const selectedCase = cases.find(c => c.id === selectedCaseId);
   const missingFields = fields.filter(f => f.status === "missing");
@@ -206,13 +255,20 @@ const MissingData = () => {
 
   // Trigger RingCentral dialer or fallback to tel: link
   const handleCall = (phoneNumber?: string) => {
-    const number = phoneNumber || selectedCase?.provider_name;
-    if (dialerLoaded && (window as any).RCAdapter) {
-      (window as any).RCAdapter.clickToCall(number || "", true);
-    } else {
-      // Fallback: open tel: link
-      window.open(`tel:${number || ""}`, "_self");
+    const number = phoneNumber || callNumber || provider?.phone || "";
+    if (!number) {
+      toast.error("No phone number available");
+      return;
     }
+    if (dialerLoaded && (window as any).RCAdapter) {
+      (window as any).RCAdapter.clickToCall(number, true);
+    } else {
+      window.open(`tel:${number}`, "_self");
+    }
+  };
+
+  const promptAndCall = () => {
+    setShowCallPrompt(true);
   };
 
   return (
@@ -227,7 +283,7 @@ const MissingData = () => {
         action={
           fields.length > 0 ? (
             <button
-              onClick={() => handleCall()}
+              onClick={promptAndCall}
               className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
             >
               <Phone className="h-4 w-4" /> Call Provider
@@ -252,6 +308,48 @@ const MissingData = () => {
           </SelectContent>
         </Select>
       </div>
+
+      {/* Call prompt with routing match */}
+      {showCallPrompt && (
+        <div className="mb-6 rounded-xl border border-border bg-card p-5 animate-fade-in">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Phone className="h-4 w-4 text-primary" />
+                {routingMatch
+                  ? `${selectedCase?.provider_name} — ${routingMatch.department}`
+                  : `${selectedCase?.provider_name ?? "Provider"}`}
+              </h3>
+              {routingMatch && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Matched plan prefix <span className="font-mono font-semibold text-foreground">{routingMatch.planPrefix}</span> from plan {selectedCase?.plan_number}
+                  {routingMatch.email && <> · {routingMatch.email}</>}
+                </p>
+              )}
+              <div className="flex items-center gap-2 mt-3">
+                <Input
+                  value={callNumber}
+                  onChange={e => setCallNumber(e.target.value)}
+                  className="h-9 text-sm font-mono max-w-[200px]"
+                  placeholder="Phone number…"
+                />
+                <button
+                  onClick={() => { handleCall(callNumber); setShowCallPrompt(false); }}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+                >
+                  <Phone className="h-4 w-4" /> Call Now
+                </button>
+                <button
+                  onClick={() => setShowCallPrompt(false)}
+                  className="rounded p-1.5 text-muted-foreground hover:bg-muted transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Empty state */}
       {!loading && fields.length === 0 && selectedCaseId && (
@@ -412,7 +510,7 @@ const MissingData = () => {
                         <Edit3 className="h-3.5 w-3.5 text-primary" /> Enter Value
                       </button>
                       <button
-                        onClick={() => handleCall()}
+                        onClick={promptAndCall}
                         className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"
                       >
                         <Phone className="h-3.5 w-3.5 text-primary" /> Call
