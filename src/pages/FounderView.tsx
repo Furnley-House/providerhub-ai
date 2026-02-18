@@ -6,45 +6,51 @@ import { getCases } from "@/services/api";
 
 // Real-world baseline metrics (manual process)
 const manualProcess = {
-  callTimePerPlanMin: 30,    // minimum mins per plan call
+  callTimePerPlanMin: 30,    // minimum mins per plan call (waiting + dept changes)
   callTimePerPlanMax: 60,    // maximum mins per plan call
   callTimePerPlanAvg: 45,    // average
   pdfExtractionPerDoc: 15,   // mins to manually extract each PDF into checklist
+  transcriptReviewTime: 7.5, // avg 5-10 mins reviewing transcript/notes after call
+  contextSwitchingTime: 7.5, // avg 5-10 mins moving between documents, systems
   repeatCallsPerCase: 3,     // avg repeat calls needed
-  totalCallTimePerCase: 45 * 3, // 135 mins total calling per case
-  totalExtractionPerCase: 15, // 15 mins manual extraction per PDF
 };
 
 // With ProviderHub AI
 const appProcess = {
-  callTimePerPlan: 12,       // structured script + live checklist = faster calls
+  callTimePerPlanMin: 30,    // call duration stays same (waiting + dept changes)
+  callTimePerPlanMax: 60,    // still 30-60 mins
+  callTimePerPlanAvg: 45,    // same call duration
   pdfExtractionPerDoc: 2,    // AI auto-extraction takes ~2 mins
+  transcriptReviewTime: 0,   // AI transcript Q&A eliminates manual review
+  contextSwitchingTime: 0,   // everything in one place — no switching
   repeatCallsPerCase: 1.2,   // AI Q&A resolves most queries in first call
-  totalCallTimePerCase: 12 * 1.2, // ~14.4 mins total
-  totalExtractionPerCase: 2,
 };
 
+// Per-case totals
+const manualPerCase = manualProcess.callTimePerPlanAvg + manualProcess.pdfExtractionPerDoc + manualProcess.transcriptReviewTime + manualProcess.contextSwitchingTime; // 75 min
+const appPerCase = appProcess.callTimePerPlanAvg + appProcess.pdfExtractionPerDoc + appProcess.transcriptReviewTime + appProcess.contextSwitchingTime; // 47 min
+// With repeat calls factored in
+const manualTotalPerCase = manualProcess.callTimePerPlanAvg * manualProcess.repeatCallsPerCase + manualProcess.pdfExtractionPerDoc + manualProcess.transcriptReviewTime * manualProcess.repeatCallsPerCase + manualProcess.contextSwitchingTime * manualProcess.repeatCallsPerCase; // 315 min
+const appTotalPerCase = Math.round(appProcess.callTimePerPlanAvg * appProcess.repeatCallsPerCase + appProcess.pdfExtractionPerDoc + appProcess.transcriptReviewTime * appProcess.repeatCallsPerCase + appProcess.contextSwitchingTime * appProcess.repeatCallsPerCase); // 56 min
+
 const comparisonData = [
-  { metric: 'Call per Plan (min)', before: manualProcess.callTimePerPlanAvg, after: appProcess.callTimePerPlan },
   { metric: 'PDF → Checklist (min)', before: manualProcess.pdfExtractionPerDoc, after: appProcess.pdfExtractionPerDoc },
+  { metric: 'Transcript Review (min)', before: manualProcess.transcriptReviewTime, after: appProcess.transcriptReviewTime },
+  { metric: 'Context Switching (min)', before: manualProcess.contextSwitchingTime, after: appProcess.contextSwitchingTime },
   { metric: 'Repeat Calls', before: manualProcess.repeatCallsPerCase, after: appProcess.repeatCallsPerCase },
-  { metric: 'Total Call Time (min)', before: manualProcess.totalCallTimePerCase, after: Math.round(appProcess.totalCallTimePerCase) },
 ];
 
 const FounderView = () => {
   const { data: cases = [] } = useQuery({ queryKey: ["cases"], queryFn: getCases });
 
-  const callSaving = Math.round((1 - appProcess.callTimePerPlan / manualProcess.callTimePerPlanAvg) * 100);
   const extractionSaving = Math.round((1 - appProcess.pdfExtractionPerDoc / manualProcess.pdfExtractionPerDoc) * 100);
+  const transcriptSaving = Math.round((1 - appProcess.transcriptReviewTime / manualProcess.transcriptReviewTime) * 100);
+  const switchingSaving = Math.round((1 - appProcess.contextSwitchingTime / manualProcess.contextSwitchingTime) * 100);
   const repeatSaving = Math.round((1 - appProcess.repeatCallsPerCase / manualProcess.repeatCallsPerCase) * 100);
-  const totalTimeSaving = Math.round((1 - appProcess.totalCallTimePerCase / manualProcess.totalCallTimePerCase) * 100);
 
-  // Per-case time savings
-  const manualTimePerCase = manualProcess.totalCallTimePerCase + manualProcess.totalExtractionPerCase; // 150 mins
-  const appTimePerCase = Math.round(appProcess.totalCallTimePerCase + appProcess.totalExtractionPerCase); // ~16 mins
-  const minsPerCaseSaved = manualTimePerCase - appTimePerCase;
+  const minsPerCaseSaved = manualTotalPerCase - appTotalPerCase;
   const totalCases = cases.length;
-  const projectedHoursSaved = Math.round((minsPerCaseSaved * Math.max(totalCases, 50)) / 60); // project for at least 50 cases
+  const projectedHoursSaved = Math.round((minsPerCaseSaved * Math.max(totalCases, 50)) / 60);
 
   return (
     <div className="animate-slide-in">
@@ -53,27 +59,27 @@ const FounderView = () => {
       {/* Top KPIs */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 mb-6">
         <MetricCard
-          icon={Phone} label="Call Time Reduction"
-          value={`${callSaving}%`}
-          detail={`${manualProcess.callTimePerPlanAvg} min → ${appProcess.callTimePerPlan} min per plan`}
-          accent="success"
-        />
-        <MetricCard
           icon={FileText} label="PDF Extraction Speed"
           value={`${extractionSaving}%`}
           detail={`${manualProcess.pdfExtractionPerDoc} min → ${appProcess.pdfExtractionPerDoc} min per document`}
           accent="success"
         />
         <MetricCard
-          icon={TrendingDown} label="Fewer Repeat Calls"
-          value={`${repeatSaving}%`}
-          detail={`${manualProcess.repeatCallsPerCase} → ${appProcess.repeatCallsPerCase} calls per case`}
+          icon={Clock} label="Transcript Review"
+          value={`${transcriptSaving}%`}
+          detail={`${manualProcess.transcriptReviewTime} min → ${appProcess.transcriptReviewTime} min (AI Q&A)`}
           accent="success"
         />
         <MetricCard
-          icon={Clock} label="Total Time Saved"
-          value={`${totalTimeSaving}%`}
-          detail={`${manualTimePerCase} min → ${appTimePerCase} min per case`}
+          icon={Cpu} label="Context Switching"
+          value={`${switchingSaving}%`}
+          detail={`${manualProcess.contextSwitchingTime} min → ${appProcess.contextSwitchingTime} min (all-in-one)`}
+          accent="success"
+        />
+        <MetricCard
+          icon={TrendingDown} label="Fewer Repeat Calls"
+          value={`${repeatSaving}%`}
+          detail={`${manualProcess.repeatCallsPerCase} → ${appProcess.repeatCallsPerCase} calls per case`}
           accent="success"
         />
       </div>
@@ -88,7 +94,7 @@ const FounderView = () => {
             ~{minsPerCaseSaved} minutes saved per case
           </p>
           <p className="text-sm text-muted-foreground">
-            Projected <strong className="text-foreground">{projectedHoursSaved} hours</strong> saved across {Math.max(totalCases, 50)} cases — freeing the CA team to handle {Math.round(minsPerCaseSaved / appTimePerCase)}x more cases per day
+            Projected <strong className="text-foreground">{projectedHoursSaved} hours</strong> saved across {Math.max(totalCases, 50)} cases — freeing the CA team to handle {Math.round(minsPerCaseSaved / appTotalPerCase)}x more cases per day
           </p>
         </div>
       </div>
@@ -127,8 +133,18 @@ const FounderView = () => {
               },
               {
                 icon: Phone,
-                title: 'Structured Call Workflow',
-                desc: `Provider calls currently take ${manualProcess.callTimePerPlanMin}–${manualProcess.callTimePerPlanMax} mins per plan as agents navigate IVRs and hunt for info. With pre-built scripts and live checklist, calls drop to ~${appProcess.callTimePerPlan} mins.`,
+                title: 'Call Duration Unchanged',
+                desc: `Provider calls still take ${manualProcess.callTimePerPlanMin}–${manualProcess.callTimePerPlanMax} mins due to hold times and department transfers — but with structured scripts and a live checklist, agents capture everything in the first call.`,
+              },
+              {
+                icon: Clock,
+                title: 'No More Transcript Review',
+                desc: `After each call, agents spend ${manualProcess.transcriptReviewTime} mins reviewing notes. AI transcript Q&A answers questions instantly — saving 5–10 mins per call.`,
+              },
+              {
+                icon: ArrowDown,
+                title: 'Zero Context Switching',
+                desc: `RingCentral, provider directory, checklist, and plan extraction all in one place — eliminates ${manualProcess.contextSwitchingTime} mins of switching between documents and systems.`,
               },
               {
                 icon: TrendingDown,
@@ -138,7 +154,7 @@ const FounderView = () => {
               {
                 icon: Shield,
                 title: 'Audit-Ready Evidence',
-                desc: 'Every field links to its source — PDF page, call transcript, or manual entry — eliminating the need to re-verify data during compliance reviews.',
+                desc: 'Every field links to its source — PDF page, call transcript, or manual entry — eliminating re-verification during compliance reviews.',
               },
             ].map(item => (
               <div key={item.title} className="flex items-start gap-3">
@@ -173,8 +189,8 @@ const FounderView = () => {
             <tr className="border-b border-border">
               <td className="px-5 py-3 text-foreground">Provider call (per plan)</td>
               <td className="px-5 py-3 text-right text-muted-foreground">{manualProcess.callTimePerPlanMin}–{manualProcess.callTimePerPlanMax} min</td>
-              <td className="px-5 py-3 text-right text-foreground font-medium">~{appProcess.callTimePerPlan} min</td>
-              <td className="px-5 py-3 text-right text-success font-semibold">{manualProcess.callTimePerPlanAvg - appProcess.callTimePerPlan} min</td>
+              <td className="px-5 py-3 text-right text-foreground font-medium">{appProcess.callTimePerPlanMin}–{appProcess.callTimePerPlanMax} min</td>
+              <td className="px-5 py-3 text-right text-muted-foreground">Same</td>
             </tr>
             <tr className="border-b border-border">
               <td className="px-5 py-3 text-foreground">PDF extraction → checklist</td>
@@ -183,15 +199,27 @@ const FounderView = () => {
               <td className="px-5 py-3 text-right text-success font-semibold">{manualProcess.pdfExtractionPerDoc - appProcess.pdfExtractionPerDoc} min</td>
             </tr>
             <tr className="border-b border-border">
+              <td className="px-5 py-3 text-foreground">Transcript review (per call)</td>
+              <td className="px-5 py-3 text-right text-muted-foreground">5–10 min</td>
+              <td className="px-5 py-3 text-right text-foreground font-medium">0 min (AI Q&A)</td>
+              <td className="px-5 py-3 text-right text-success font-semibold">~{manualProcess.transcriptReviewTime} min</td>
+            </tr>
+            <tr className="border-b border-border">
+              <td className="px-5 py-3 text-foreground">Context switching</td>
+              <td className="px-5 py-3 text-right text-muted-foreground">5–10 min</td>
+              <td className="px-5 py-3 text-right text-foreground font-medium">0 min (all-in-one)</td>
+              <td className="px-5 py-3 text-right text-success font-semibold">~{manualProcess.contextSwitchingTime} min</td>
+            </tr>
+            <tr className="border-b border-border">
               <td className="px-5 py-3 text-foreground">Repeat/follow-up calls</td>
               <td className="px-5 py-3 text-right text-muted-foreground">{manualProcess.repeatCallsPerCase} calls</td>
               <td className="px-5 py-3 text-right text-foreground font-medium">{appProcess.repeatCallsPerCase} calls</td>
-              <td className="px-5 py-3 text-right text-success font-semibold">{(manualProcess.repeatCallsPerCase - appProcess.repeatCallsPerCase).toFixed(1)} calls</td>
+              <td className="px-5 py-3 text-right text-success font-semibold">{(manualProcess.repeatCallsPerCase - appProcess.repeatCallsPerCase).toFixed(1)} fewer</td>
             </tr>
             <tr className="bg-muted/20">
-              <td className="px-5 py-3 text-foreground font-semibold">Total per case</td>
-              <td className="px-5 py-3 text-right text-overdue font-bold">{manualTimePerCase} min</td>
-              <td className="px-5 py-3 text-right text-success font-bold">{appTimePerCase} min</td>
+              <td className="px-5 py-3 text-foreground font-semibold">Total per case (with repeats)</td>
+              <td className="px-5 py-3 text-right text-overdue font-bold">{manualTotalPerCase} min</td>
+              <td className="px-5 py-3 text-right text-success font-bold">{appTotalPerCase} min</td>
               <td className="px-5 py-3 text-right text-success font-bold">{minsPerCaseSaved} min ↓</td>
             </tr>
           </tbody>
