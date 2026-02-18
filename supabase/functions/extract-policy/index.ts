@@ -141,8 +141,57 @@ Return ONLY valid JSON array. No markdown, no code blocks.`;
       throw new Error("AI returned invalid JSON");
     }
 
-    // Insert checklist fields into database
-    const caseId = doc.case_id;
+    // Compute stats
+    const completeFields = extractedFields.filter((f: any) => f.status === "complete").length;
+    const totalFields = extractedFields.length;
+    const avgConf = Math.round(
+      extractedFields
+        .filter((f: any) => f.confidence)
+        .reduce((sum: number, f: any) => sum + (f.confidence === "high" ? 95 : f.confidence === "medium" ? 65 : 30), 0) / Math.max(totalFields, 1)
+    );
+
+    // Try to detect provider name and plan number from extracted fields
+    const providerField = extractedFields.find((f: any) => f.label === "Provider Name");
+    const planField = extractedFields.find((f: any) => f.label === "Plan Number");
+    const pensionTypeField = extractedFields.find((f: any) => f.label === "Type of Pension");
+    const detectedProvider = providerField?.value || doc.provider_name || "Unknown Provider";
+    const detectedPlan = planField?.value || "Unknown";
+    const detectedType = pensionTypeField?.value || "Personal Pension";
+
+    // Auto-create case if document has no case_id
+    let caseId = doc.case_id;
+    if (!caseId) {
+      const caseRef = `CASE-${Date.now().toString(36).toUpperCase()}`;
+      const { data: newCase, error: caseErr } = await supabase.from("cases").insert({
+        case_ref: caseRef,
+        client_name: doc.file_name.replace(/\.[^.]+$/, "").replace(/[_-]/g, " "),
+        provider_name: detectedProvider,
+        plan_number: detectedPlan,
+        plan_type: detectedType,
+        status: "ceding_in_progress",
+        ai_extraction_date: new Date().toISOString().split("T")[0],
+        confidence_score: avgConf,
+        missing_fields_count: totalFields - completeFields,
+      }).select().single();
+
+      if (caseErr) {
+        console.error("Case creation error:", caseErr);
+      } else {
+        caseId = newCase.id;
+        // Link document to the new case
+        await supabase.from("documents").update({ case_id: caseId }).eq("id", documentId);
+      }
+    } else {
+      // Update existing case
+      await supabase.from("cases").update({
+        ai_extraction_date: new Date().toISOString().split("T")[0],
+        confidence_score: avgConf,
+        missing_fields_count: totalFields - completeFields,
+        status: "ceding_in_progress",
+      }).eq("id", caseId);
+    }
+
+    // Insert checklist fields
     if (caseId) {
       const checklistRows = extractedFields.map((f: any) => ({
         case_id: caseId,
@@ -157,34 +206,19 @@ Return ONLY valid JSON array. No markdown, no code blocks.`;
 
       // Delete existing fields for this case (re-extraction)
       await supabase.from("checklist_fields").delete().eq("case_id", caseId);
-      
+
       const { error: insertErr } = await supabase.from("checklist_fields").insert(checklistRows);
       if (insertErr) console.error("Checklist insert error:", insertErr);
-
-      // Update document status
-      const completeFields = extractedFields.filter((f: any) => f.status === "complete").length;
-      const totalFields = extractedFields.length;
-      const avgConf = Math.round(
-        extractedFields
-          .filter((f: any) => f.confidence)
-          .reduce((sum: number, f: any) => sum + (f.confidence === "high" ? 95 : f.confidence === "medium" ? 65 : 30), 0) / Math.max(totalFields, 1)
-      );
-
-      await supabase.from("documents").update({
-        status: "extracted",
-        fields_extracted: completeFields,
-        avg_confidence: avgConf,
-        extracted_data: extractedFields,
-      }).eq("id", documentId);
-
-      // Update case
-      await supabase.from("cases").update({
-        ai_extraction_date: new Date().toISOString().split("T")[0],
-        confidence_score: avgConf,
-        missing_fields_count: totalFields - completeFields,
-        status: "ceding_in_progress",
-      }).eq("id", caseId);
     }
+
+    // Always update document status
+    await supabase.from("documents").update({
+      status: "extracted",
+      fields_extracted: completeFields,
+      avg_confidence: avgConf,
+      extracted_data: extractedFields,
+      provider_name: detectedProvider,
+    }).eq("id", documentId);
 
     return new Response(JSON.stringify({ 
       success: true, 
