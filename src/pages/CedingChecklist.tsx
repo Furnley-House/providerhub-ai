@@ -1,6 +1,7 @@
 import { ConfidenceBadge, EvidenceBadge, FieldStatusIcon, SectionHeader } from "@/components/shared/StatusComponents";
 import { useState, useEffect, useCallback } from "react";
-import { MessageSquare, Check, RotateCcw, Save, X, FileText } from "lucide-react";
+import { MessageSquare, Check, RotateCcw, Save, X, FileText, Loader2 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -20,6 +21,9 @@ const CedingChecklist = () => {
   const [editingFieldId, setEditingFieldId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [saving, setSaving] = useState(false);
+  const [commentFieldId, setCommentFieldId] = useState<string | null>(null);
+  const [commentText, setCommentText] = useState("");
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   // Fetch cases that have checklist fields
   const fetchCases = useCallback(async () => {
@@ -119,6 +123,81 @@ const CedingChecklist = () => {
     }
     setSaving(false);
     setEditingFieldId(null);
+  };
+
+  // ── Review actions ──
+  const handleApprove = async (field: ChecklistRow) => {
+    setActionLoading(field.id);
+    const user = (await supabase.auth.getUser()).data.user;
+    const { error } = await supabase
+      .from("checklist_fields")
+      .update({
+        status: "complete",
+        reviewed_by: user?.id ?? null,
+        notes: field.notes ? `${field.notes}\n✅ Approved by reviewer` : "✅ Approved by reviewer",
+      })
+      .eq("id", field.id);
+    if (error) {
+      toast.error("Failed to approve");
+    } else {
+      toast.success(`"${field.label}" approved`);
+      setFields(prev =>
+        prev.map(f =>
+          f.id === field.id
+            ? { ...f, status: "complete", reviewed_by: user?.id ?? null, notes: field.notes ? `${field.notes}\n✅ Approved by reviewer` : "✅ Approved by reviewer" }
+            : f
+        )
+      );
+    }
+    setActionLoading(null);
+  };
+
+  const handleRequestFollowUp = async (field: ChecklistRow) => {
+    setActionLoading(field.id);
+    const { error } = await supabase
+      .from("checklist_fields")
+      .update({
+        status: "needs_review",
+        notes: field.notes ? `${field.notes}\n🔄 Follow-up requested` : "🔄 Follow-up requested",
+      })
+      .eq("id", field.id);
+    if (error) {
+      toast.error("Failed to update");
+    } else {
+      toast.success(`Follow-up requested for "${field.label}"`);
+      setFields(prev =>
+        prev.map(f =>
+          f.id === field.id
+            ? { ...f, status: "needs_review", notes: field.notes ? `${field.notes}\n🔄 Follow-up requested` : "🔄 Follow-up requested" }
+            : f
+        )
+      );
+    }
+    setActionLoading(null);
+  };
+
+  const handleSaveComment = async (field: ChecklistRow) => {
+    if (!commentText.trim()) return;
+    setActionLoading(field.id);
+    const existingNotes = field.notes ?? "";
+    const newNotes = existingNotes
+      ? `${existingNotes}\n💬 ${commentText.trim()}`
+      : `💬 ${commentText.trim()}`;
+    const { error } = await supabase
+      .from("checklist_fields")
+      .update({ notes: newNotes })
+      .eq("id", field.id);
+    if (error) {
+      toast.error("Failed to save comment");
+    } else {
+      toast.success("Comment saved");
+      setFields(prev =>
+        prev.map(f => (f.id === field.id ? { ...f, notes: newNotes } : f))
+      );
+    }
+    setCommentFieldId(null);
+    setCommentText("");
+    setActionLoading(null);
   };
 
   return (
@@ -320,9 +399,37 @@ const CedingChecklist = () => {
                               </p>
                             )}
                             {field.notes && (
-                              <p className="text-xs text-warning mt-1">
-                                ⚠ {field.notes}
+                              <p className="text-xs text-muted-foreground mt-1 whitespace-pre-line">
+                                {field.notes}
                               </p>
+                            )}
+
+                            {/* Comment input */}
+                            {commentFieldId === field.id && (
+                              <div className="mt-2 flex items-start gap-2">
+                                <Textarea
+                                  value={commentText}
+                                  onChange={e => setCommentText(e.target.value)}
+                                  placeholder="Add a comment…"
+                                  className="h-16 text-xs"
+                                  autoFocus
+                                />
+                                <button
+                                  onClick={() => handleSaveComment(field)}
+                                  disabled={!commentText.trim() || actionLoading === field.id}
+                                  className="rounded p-1.5 text-primary hover:bg-primary/10 transition-colors disabled:opacity-50"
+                                  title="Save comment"
+                                >
+                                  <Save className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={() => { setCommentFieldId(null); setCommentText(""); }}
+                                  className="rounded p-1.5 text-muted-foreground hover:bg-muted transition-colors"
+                                  title="Cancel"
+                                >
+                                  <X className="h-4 w-4" />
+                                </button>
+                              </div>
                             )}
                           </>
                         )}
@@ -338,18 +445,23 @@ const CedingChecklist = () => {
                       {mode === "review" && field.status !== "missing" && (
                         <div className="flex gap-1 shrink-0">
                           <button
-                            className="rounded p-1 text-success hover:bg-success/10 transition-colors"
+                            onClick={() => handleApprove(field)}
+                            disabled={actionLoading === field.id}
+                            className="rounded p-1 text-success hover:bg-success/10 transition-colors disabled:opacity-50"
                             title="Approve"
                           >
-                            <Check className="h-4 w-4" />
+                            {actionLoading === field.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                           </button>
                           <button
-                            className="rounded p-1 text-warning hover:bg-warning/10 transition-colors"
+                            onClick={() => handleRequestFollowUp(field)}
+                            disabled={actionLoading === field.id}
+                            className="rounded p-1 text-warning hover:bg-warning/10 transition-colors disabled:opacity-50"
                             title="Request follow-up"
                           >
                             <RotateCcw className="h-4 w-4" />
                           </button>
                           <button
+                            onClick={() => { setCommentFieldId(field.id); setCommentText(""); }}
                             className="rounded p-1 text-muted-foreground hover:bg-muted transition-colors"
                             title="Comment"
                           >
