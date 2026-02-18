@@ -2,16 +2,15 @@ import { SectionHeader } from "@/components/shared/StatusComponents";
 import { Link } from "react-router-dom";
 import {
   Clock, FileText, Phone, AlertTriangle, CheckCircle, Loader2,
-  ArrowRight, Briefcase, BarChart3, Users, Zap, FolderOpen
+  ArrowRight, Briefcase, BarChart3, Zap, FolderOpen, Users
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { getCases, getTasks, getProviders } from "@/services/api";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import { getCases, getTasks } from "@/services/api";
 
 const Dashboard = () => {
   const { data: cases = [], isLoading: casesLoading } = useQuery({ queryKey: ["cases"], queryFn: getCases });
   const { data: tasks = [], isLoading: tasksLoading } = useQuery({ queryKey: ["tasks"], queryFn: () => getTasks() });
-  const { data: providers = [] } = useQuery({ queryKey: ["providers"], queryFn: getProviders });
+  
 
   const isLoading = casesLoading || tasksLoading;
 
@@ -37,24 +36,10 @@ const Dashboard = () => {
     count: cases.filter(c => c.status === s.key).length,
   }));
 
-  // Provider pain data
-  const providerCaseMap = new Map<string, number>();
-  cases.forEach(c => {
-    providerCaseMap.set(c.provider_name, (providerCaseMap.get(c.provider_name) || 0) + (c.missing_fields_count ?? 0));
-  });
-  const providerPainData = Array.from(providerCaseMap.entries())
-    .map(([provider, missingFields]) => ({ provider, missingFields }))
-    .sort((a, b) => b.missingFields - a.missingFields)
-    .slice(0, 6);
-
-  const chartColors = [
-    'hsl(0, 72%, 51%)', 'hsl(38, 92%, 50%)', 'hsl(38, 82%, 55%)',
-    'hsl(187, 50%, 50%)', 'hsl(187, 70%, 38%)', 'hsl(152, 60%, 40%)',
-  ];
 
   // Recent cases (last 5)
   const recentCases = cases.slice(0, 5);
-  const pendingTasksList = tasks.filter(t => !t.completed).slice(0, 6);
+  
 
   // Quick actions
   const quickActions = [
@@ -173,85 +158,6 @@ const Dashboard = () => {
               ))}
             </div>
           </div>
-        </div>
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-2 mt-6">
-        {/* Work Queue */}
-        <div className="rounded-xl border border-border bg-card overflow-hidden">
-          <div className="border-b border-border bg-muted/30 px-5 py-3 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <Clock className="h-4 w-4 text-primary" /> Work Queue
-            </h2>
-            {pendingTasksList.length > 0 && (
-              <span className="rounded-full bg-warning/15 px-2 py-0.5 text-[10px] font-semibold text-warning">{pendingTasks} pending</span>
-            )}
-          </div>
-          {pendingTasksList.length > 0 ? (
-            <div className="divide-y divide-border">
-              {pendingTasksList.map(task => {
-                const Icon = task.type === 'chase' ? AlertTriangle : task.type === 'call' ? Phone : task.type === 'upload' ? FileText : CheckCircle;
-                const iconColor = task.type === 'chase' ? 'text-overdue' : task.type === 'call' ? 'text-primary' : task.type === 'upload' ? 'text-info' : 'text-success';
-                return (
-                  <Link
-                    key={task.id}
-                    to={`/cases/${task.case_id}`}
-                    className="flex items-start gap-3 px-5 py-3 hover:bg-muted/50 transition-colors"
-                  >
-                    <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${iconColor}`} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">{task.title}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{task.client_name} · {task.provider_name}</p>
-                    </div>
-                    {task.due_date && (
-                      <span className="text-xs text-muted-foreground shrink-0">{task.due_date}</span>
-                    )}
-                  </Link>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="px-5 py-12 text-center">
-              <CheckCircle className="mx-auto mb-3 h-8 w-8 text-success/40" />
-              <p className="text-sm text-muted-foreground">All caught up!</p>
-              <p className="text-xs text-muted-foreground mt-1">No pending tasks right now</p>
-            </div>
-          )}
-        </div>
-
-        {/* Provider Insights */}
-        <div className="rounded-xl border border-border bg-card overflow-hidden">
-          <div className="border-b border-border bg-muted/30 px-5 py-3">
-            <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <Users className="h-4 w-4 text-primary" /> Provider Insights
-            </h2>
-          </div>
-          {providerPainData.length > 0 ? (
-            <div className="p-5">
-              <p className="text-xs text-muted-foreground mb-3">Missing fields by provider</p>
-              <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={providerPainData} layout="vertical" margin={{ left: 0 }}>
-                  <XAxis type="number" tick={{ fontSize: 11 }} />
-                  <YAxis type="category" dataKey="provider" tick={{ fontSize: 11 }} width={100} />
-                  <Tooltip
-                    contentStyle={{ borderRadius: '8px', border: '1px solid hsl(214, 20%, 90%)', fontSize: '12px' }}
-                    formatter={(value: number) => [value, 'Missing Fields']}
-                  />
-                  <Bar dataKey="missingFields" radius={[0, 4, 4, 0]} barSize={16}>
-                    {providerPainData.map((_, i) => (
-                      <Cell key={i} fill={chartColors[i % chartColors.length]} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <div className="px-5 py-12 text-center">
-              <BarChart3 className="mx-auto mb-3 h-8 w-8 text-muted-foreground/40" />
-              <p className="text-sm text-muted-foreground">No provider data yet</p>
-              <p className="text-xs text-muted-foreground mt-1">Insights appear as cases are processed</p>
-            </div>
-          )}
         </div>
       </div>
     </div>
