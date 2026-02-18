@@ -1,6 +1,6 @@
 import { SectionHeader } from "@/components/shared/StatusComponents";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
-import { TrendingDown, Clock, Phone, Shield, FileText, Cpu, ArrowDown } from "lucide-react";
+import { TrendingDown, Clock, Phone, Shield, FileText, Cpu, ArrowDown, Users } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getCases } from "@/services/api";
 
@@ -98,6 +98,87 @@ const FounderView = () => {
           </p>
         </div>
       </div>
+
+      {/* Team Weekly Capacity */}
+      {(() => {
+        const weeklyLow = 20;
+        const weeklyHigh = 25;
+        const weeklyAvg = 22.5;
+
+        // Current: hours spent on 20-25 cedings
+        const manualHoursLow = Math.round((weeklyLow * manualTotalPerCase) / 60);
+        const manualHoursHigh = Math.round((weeklyHigh * manualTotalPerCase) / 60);
+
+        // With ProviderHub: hours for same 20-25 cedings
+        const appHoursLow = Math.round((weeklyLow * appTotalPerCase) / 60);
+        const appHoursHigh = Math.round((weeklyHigh * appTotalPerCase) / 60);
+
+        // Hours freed up
+        const savedHoursLow = manualHoursLow - appHoursLow;
+        const savedHoursHigh = manualHoursHigh - appHoursHigh;
+
+        // If they use the same hours, how many cedings can they do?
+        const manualMinsPerWeek = weeklyAvg * manualTotalPerCase;
+        const newCapacity = Math.round(manualMinsPerWeek / appTotalPerCase);
+        const capacityIncrease = Math.round(((newCapacity - weeklyAvg) / weeklyAvg) * 100);
+
+        return (
+          <div className="rounded-xl border border-border bg-card overflow-hidden mb-6">
+            <div className="border-b border-border bg-muted/30 px-5 py-3 flex items-center gap-2">
+              <Users className="h-4 w-4 text-primary" />
+              <h2 className="text-sm font-semibold text-foreground">Team Weekly Capacity</h2>
+            </div>
+            <div className="p-5">
+              <p className="text-xs text-muted-foreground mb-5">Based on current workload of {weeklyLow}–{weeklyHigh} cedings per week (whole team)</p>
+
+              <div className="grid gap-4 sm:grid-cols-3 mb-6">
+                <div className="rounded-lg border border-border p-4 text-center">
+                  <p className="text-xs text-muted-foreground mb-1">Same workload, less time</p>
+                  <p className="text-2xl font-bold text-success">{savedHoursLow}–{savedHoursHigh} hrs</p>
+                  <p className="text-xs text-muted-foreground mt-1">freed up per week</p>
+                </div>
+                <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 text-center">
+                  <p className="text-xs text-muted-foreground mb-1">Same hours, more output</p>
+                  <p className="text-2xl font-bold text-primary">~{newCapacity} cedings</p>
+                  <p className="text-xs text-muted-foreground mt-1">per week (+{capacityIncrease}%)</p>
+                </div>
+                <div className="rounded-lg border border-border p-4 text-center">
+                  <p className="text-xs text-muted-foreground mb-1">Time per ceding</p>
+                  <p className="text-2xl font-bold text-foreground">{Math.round(manualTotalPerCase / 60 * 10) / 10}h → {Math.round(appTotalPerCase / 60 * 10) / 10}h</p>
+                  <p className="text-xs text-muted-foreground mt-1">per case reduction</p>
+                </div>
+              </div>
+
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="py-2 text-left font-medium text-muted-foreground">Scenario</th>
+                    <th className="py-2 text-right font-medium text-muted-foreground">Manual</th>
+                    <th className="py-2 text-right font-medium text-muted-foreground">ProviderHub</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-b border-border">
+                    <td className="py-2.5 text-foreground">Weekly hours for {weeklyLow}–{weeklyHigh} cedings</td>
+                    <td className="py-2.5 text-right text-overdue font-semibold">{manualHoursLow}–{manualHoursHigh} hrs</td>
+                    <td className="py-2.5 text-right text-success font-semibold">{appHoursLow}–{appHoursHigh} hrs</td>
+                  </tr>
+                  <tr className="border-b border-border">
+                    <td className="py-2.5 text-foreground">Cedings possible in {manualHoursLow}–{manualHoursHigh} hrs</td>
+                    <td className="py-2.5 text-right text-muted-foreground">{weeklyLow}–{weeklyHigh}</td>
+                    <td className="py-2.5 text-right text-primary font-semibold">~{newCapacity}</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2.5 text-foreground font-semibold">Hours saved per week</td>
+                    <td className="py-2.5 text-right text-muted-foreground">—</td>
+                    <td className="py-2.5 text-right text-success font-bold">{savedHoursLow}–{savedHoursHigh} hrs ↓</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+      })()}
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Before vs After Chart */}
