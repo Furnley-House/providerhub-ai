@@ -9,36 +9,38 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { fields, clientName, providerName, planNumber } = await req.json();
-    if (!fields || !Array.isArray(fields) || fields.length === 0) {
-      throw new Error("fields array is required");
+    const { fields, reviewFields, clientName, providerName, planNumber } = await req.json();
+    if ((!fields || fields.length === 0) && (!reviewFields || reviewFields.length === 0)) {
+      throw new Error("fields or reviewFields array is required");
     }
 
     const lovableKey = Deno.env.get("LOVABLE_API_KEY");
     if (!lovableKey) throw new Error("LOVABLE_API_KEY not configured");
 
-    const fieldsList = fields.map((f: any) => `- ${f.label} (section: ${f.section})`).join("\n");
+    const missingList = (fields || []).map((f: any) => `- ${f.label} (section: ${f.section}) — MISSING, no value extracted`).join("\n");
+    const reviewList = (reviewFields || []).map((f: any) => `- ${f.label} (section: ${f.section}) — current value: "${f.value}", confidence: ${f.confidence} — NEEDS VERIFICATION`).join("\n");
 
-    const systemPrompt = `You are a UK financial services call script generator. You create professional, concise telephone scripts for pension administrators to call providers and obtain missing policy information.
+    const systemPrompt = `You are a UK financial services call script generator. You create professional, concise telephone scripts for pension administrators to call providers and obtain or verify policy information.
 
 Rules:
 - Be polite and professional
 - Reference the client name, provider, and plan number
-- Ask for all missing fields in a logical order
+- For MISSING fields: ask the provider to supply the information
+- For NEEDS VERIFICATION fields: read back the current value and ask the provider to confirm or correct it
+- Group related questions together logically
 - Include a brief introduction and sign-off
 - Keep it natural and conversational
 - Return ONLY the script text, no markdown formatting`;
 
-    const userPrompt = `Generate a telephone call script to obtain the following missing information:
+    const userPrompt = `Generate a telephone call script for the following case:
 
 Client: ${clientName || "the client"}
 Provider: ${providerName || "the provider"}
 Plan Number: ${planNumber || "N/A"}
 
-Missing fields:
-${fieldsList}
-
-Generate a professional call script.`;
+${missingList ? `Missing fields (need to obtain):\n${missingList}\n` : ""}
+${reviewList ? `Fields to verify:\n${reviewList}\n` : ""}
+Generate a professional call script covering all items above.`;
 
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
