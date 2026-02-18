@@ -5,14 +5,6 @@ import {
   FileText, Phone, Clock, Shield, Cpu, TrendingDown, ArrowDown, Users, BarChart3, AlertTriangle, CheckCircle, Zap
 } from "lucide-react";
 
-// Screenshots
-import screenshotDashboard from "@/assets/screenshots/dashboard.png";
-import screenshotCases from "@/assets/screenshots/cases.png";
-import screenshotDocuments from "@/assets/screenshots/documents.png";
-import screenshotCallAssist from "@/assets/screenshots/call-assist.png";
-import screenshotMissingData from "@/assets/screenshots/missing-data.png";
-import screenshotProviders from "@/assets/screenshots/providers.png";
-import screenshotFounderView from "@/assets/screenshots/founder-view.png";
 
 // Founder View metrics (same as FounderView.tsx)
 const manualProcess = {
@@ -163,78 +155,147 @@ const slides: React.FC[] = [
     </div>
   ),
 
-  // Slide 5: Dashboard & Cases (screenshot)
+  // Slide 5: Dashboard & Cases
   () => (
     <div className="flex flex-col h-full bg-white px-20 py-16">
       <h2 className="text-4xl font-bold text-[hsl(197,71%,20%)] mb-2">Dashboard & Case Pipeline</h2>
-      <p className="text-lg text-gray-500 mb-8">Central view of all LOA cases, pipeline status, and quick actions</p>
-      <div className="grid grid-cols-2 gap-6 flex-1">
-        <div className="rounded-xl border-2 border-gray-100 overflow-hidden">
-          <img src={screenshotDashboard} alt="Dashboard" className="w-full h-full object-cover object-top" />
+      <p className="text-lg text-gray-500 mb-10">Central view of all LOA cases, pipeline status, and quick actions</p>
+      <div className="grid grid-cols-2 gap-8 flex-1">
+        <div className="space-y-6">
+          <h3 className="text-2xl font-bold text-gray-900">Dashboard</h3>
+          {[
+            { icon: BarChart3, title: "Pipeline Overview", desc: "Visual pipeline from LOA Sent → Ceding Complete with real-time counts" },
+            { icon: AlertTriangle, title: "KPI Cards", desc: "Active cases, overdue, completed, and pending tasks at a glance" },
+            { icon: Zap, title: "Quick Actions", desc: "One-click access to create cases, upload documents, log calls, or manage providers" },
+          ].map(item => (
+            <div key={item.title} className="flex items-start gap-3 p-4 rounded-xl border-2 border-gray-100">
+              <div className="w-10 h-10 rounded-lg bg-[hsl(197,71%,20%)]/10 flex items-center justify-center shrink-0">
+                <item.icon className="w-5 h-5 text-[hsl(197,71%,20%)]" />
+              </div>
+              <div>
+                <p className="text-lg font-bold text-gray-900">{item.title}</p>
+                <p className="text-sm text-gray-500 mt-0.5">{item.desc}</p>
+              </div>
+            </div>
+          ))}
         </div>
-        <div className="rounded-xl border-2 border-gray-100 overflow-hidden">
-          <img src={screenshotCases} alt="Cases" className="w-full h-full object-cover object-top" />
+        <div className="space-y-6">
+          <h3 className="text-2xl font-bold text-gray-900">Case Pipeline</h3>
+          {[
+            { icon: FileText, title: "Full Case Tracking", desc: "Client, provider, plan number, status, value, confidence — all in one table" },
+            { icon: CheckCircle, title: "Status Filters", desc: "Filter by LOA Sent, Waiting, PDF Received, Ceding In Progress, Complete" },
+            { icon: Shield, title: "Confidence Score", desc: "AI extraction confidence per case — CAs know exactly what needs attention" },
+          ].map(item => (
+            <div key={item.title} className="flex items-start gap-3 p-4 rounded-xl border-2 border-gray-100">
+              <div className="w-10 h-10 rounded-lg bg-[hsl(173,58%,39%)]/10 flex items-center justify-center shrink-0">
+                <item.icon className="w-5 h-5 text-[hsl(173,58%,39%)]" />
+              </div>
+              <div>
+                <p className="text-lg font-bold text-gray-900">{item.title}</p>
+                <p className="text-sm text-gray-500 mt-0.5">{item.desc}</p>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
+      <p className="mt-6 text-center text-sm text-gray-400 italic">Live demo available — can be shown during or after the presentation</p>
     </div>
   ),
 
-  // Slide 6: Document AI (screenshot)
+  // Slide 6: Document AI
   () => (
     <div className="flex flex-col h-full bg-white px-20 py-16">
       <h2 className="text-4xl font-bold text-[hsl(197,71%,20%)] mb-2">AI Document Extraction</h2>
-      <p className="text-lg text-gray-500 mb-8">Upload policy PDFs → AI extracts fields with confidence scoring</p>
-      <div className="flex gap-8 flex-1">
-        <div className="flex-1 rounded-xl border-2 border-gray-100 overflow-hidden">
-          <img src={screenshotDocuments} alt="Document Inbox" className="w-full h-full object-cover object-top" />
-        </div>
-        <div className="w-80 space-y-4">
-          <FeaturePoint icon={Cpu} title="AI PDF Extraction" desc={`15 min manual → ~2 min AI extraction per document (${Math.round((1-appProcess.pdfExtractionPerDoc/manualProcess.pdfExtractionPerDoc)*100)}% faster)`} />
-          <FeaturePoint icon={Shield} title="Evidence Links" desc="Every extracted field links back to the source PDF page and snippet" />
-          <FeaturePoint icon={BarChart3} title="Confidence Scoring" desc="High / Medium / Low confidence tags so CAs know what to verify" />
-          <FeaturePoint icon={Users} title="Jargon Mapping" desc="Provider-specific terms automatically mapped to standard field names" />
-        </div>
+      <p className="text-lg text-gray-500 mb-10">Upload policy PDFs → AI extracts fields with confidence scoring</p>
+      <div className="grid grid-cols-2 gap-8 flex-1">
+        {[
+          { icon: Cpu, title: "AI PDF Extraction", desc: `Manual extraction takes ${manualProcess.pdfExtractionPerDoc} mins per document. AI does it in ~${appProcess.pdfExtractionPerDoc} mins — ${Math.round((1-appProcess.pdfExtractionPerDoc/manualProcess.pdfExtractionPerDoc)*100)}% faster.` },
+          { icon: Shield, title: "Evidence Links", desc: "Every extracted value links back to the exact PDF page and text snippet for verification." },
+          { icon: BarChart3, title: "Confidence Scoring", desc: "High / Medium / Low confidence tags on every field — CAs know exactly what to verify." },
+          { icon: Users, title: "Jargon Mapping", desc: 'Provider-specific terms auto-mapped to standard field names. E.g., "Allocation rate" → Contribution allocation %.' },
+        ].map(item => (
+          <div key={item.title} className="rounded-xl border-2 border-gray-100 p-8 flex items-start gap-5">
+            <div className="w-12 h-12 rounded-xl bg-[hsl(173,58%,39%)]/10 flex items-center justify-center shrink-0">
+              <item.icon className="w-6 h-6 text-[hsl(173,58%,39%)]" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">{item.title}</h3>
+              <p className="text-gray-600 leading-relaxed">{item.desc}</p>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   ),
 
-  // Slide 7: Missing Data & Call Assist (screenshot)
+  // Slide 7: Missing Data & Call Assist
   () => (
     <div className="flex flex-col h-full bg-white px-20 py-16">
       <h2 className="text-4xl font-bold text-[hsl(197,71%,20%)] mb-2">Missing Data & Call Assist</h2>
-      <p className="text-lg text-gray-500 mb-8">Only call when truly needed — AI prepares the shortest possible call</p>
-      <div className="flex gap-8 flex-1">
-        <div className="flex-1 rounded-xl border-2 border-gray-100 overflow-hidden">
-          <img src={screenshotMissingData} alt="Missing Data" className="w-full h-full object-cover object-top" />
+      <p className="text-lg text-gray-500 mb-10">Only call when truly needed — AI prepares the shortest possible call</p>
+      <div className="grid grid-cols-2 gap-8 flex-1">
+        <div className="space-y-5">
+          <h3 className="text-2xl font-bold text-gray-900">Missing Data Resolution</h3>
+          {[
+            { icon: AlertTriangle, title: "Auto-detected Gaps", desc: "AI identifies missing and low-confidence fields after PDF extraction" },
+            { icon: Cpu, title: "AI Question Script", desc: "Generates short, provider-friendly questions for each missing field" },
+            { icon: CheckCircle, title: "Enter or Call", desc: "Each missing field has Enter Value (if known) or Call (to resolve via phone)" },
+          ].map(item => (
+            <div key={item.title} className="flex items-start gap-3 p-4 rounded-xl border-2 border-gray-100">
+              <div className="w-9 h-9 rounded-lg bg-[hsl(38,92%,50%)]/10 flex items-center justify-center shrink-0">
+                <item.icon className="w-5 h-5 text-[hsl(38,92%,50%)]" />
+              </div>
+              <div>
+                <p className="text-lg font-bold text-gray-900">{item.title}</p>
+                <p className="text-sm text-gray-500 mt-0.5">{item.desc}</p>
+              </div>
+            </div>
+          ))}
         </div>
-        <div className="flex-1 rounded-xl border-2 border-gray-100 overflow-hidden">
-          <img src={screenshotCallAssist} alt="Call Assist" className="w-full h-full object-cover object-top" />
+        <div className="space-y-5">
+          <h3 className="text-2xl font-bold text-gray-900">Call Assist</h3>
+          {[
+            { icon: Phone, title: "Call Logging", desc: "Log calls with provider, duration, department, and notes — linked to case" },
+            { icon: Clock, title: "Transcript Q&A", desc: "AI answers questions from call transcripts — no manual review needed" },
+            { icon: TrendingDown, title: "Fewer Repeat Calls", desc: `Structured scripts + AI Q&A cuts repeat calls from ${manualProcess.repeatCallsPerCase} to ${appProcess.repeatCallsPerCase} per case` },
+          ].map(item => (
+            <div key={item.title} className="flex items-start gap-3 p-4 rounded-xl border-2 border-gray-100">
+              <div className="w-9 h-9 rounded-lg bg-[hsl(197,71%,20%)]/10 flex items-center justify-center shrink-0">
+                <item.icon className="w-5 h-5 text-[hsl(197,71%,20%)]" />
+              </div>
+              <div>
+                <p className="text-lg font-bold text-gray-900">{item.title}</p>
+                <p className="text-sm text-gray-500 mt-0.5">{item.desc}</p>
+              </div>
+            </div>
+          ))}
         </div>
-      </div>
-      <div className="mt-6 grid grid-cols-4 gap-4">
-        <FeaturePoint icon={AlertTriangle} title="Missing Fields List" desc="Auto-generated from AI extraction gaps" />
-        <FeaturePoint icon={Phone} title="AI Question Script" desc="Short, provider-friendly wording generated" />
-        <FeaturePoint icon={Clock} title="Transcript Q&A" desc="AI answers questions from call recordings" />
-        <FeaturePoint icon={TrendingDown} title="Fewer Repeat Calls" desc={`${manualProcess.repeatCallsPerCase} → ${appProcess.repeatCallsPerCase} calls per case`} />
       </div>
     </div>
   ),
 
-  // Slide 8: Provider Directory (screenshot)
+  // Slide 8: Provider Directory
   () => (
     <div className="flex flex-col h-full bg-white px-20 py-16">
       <h2 className="text-4xl font-bold text-[hsl(197,71%,20%)] mb-2">Provider Intelligence</h2>
-      <p className="text-lg text-gray-500 mb-8">Capture tribal knowledge once — reuse forever</p>
-      <div className="flex gap-8 flex-1">
-        <div className="flex-[2] rounded-xl border-2 border-gray-100 overflow-hidden">
-          <img src={screenshotProviders} alt="Provider Directory" className="w-full h-full object-cover object-top" />
-        </div>
-        <div className="flex-1 space-y-4">
-          <FeaturePoint icon={Phone} title="Correct Contact Routing" desc="Numbers differ by product, department, and plan prefix — all stored and auto-applied" />
-          <FeaturePoint icon={FileText} title="Jargon Mapping" desc='Provider wording → standard field names. E.g., "Allocation rate" → Contribution allocation %' />
-          <FeaturePoint icon={Users} title="6 Providers Configured" desc="Aviva, Standard Life, Royal London, Scottish Widows, Aegon, Prudential" />
-          <FeaturePoint icon={Zap} title="Plan Prefix Rules" desc="TK* → Personal Pensions, AV* → Platform, FP* → Legacy Friends Provident" />
-        </div>
+      <p className="text-lg text-gray-500 mb-10">Capture tribal knowledge once — reuse forever</p>
+      <div className="grid grid-cols-2 gap-8 flex-1">
+        {[
+          { icon: Phone, title: "Correct Contact Routing", desc: "Phone numbers differ by product, department, and plan prefix. All stored centrally and auto-applied when a CA starts a call." },
+          { icon: FileText, title: "Jargon Mapping", desc: 'Each provider uses different terms for the same concept. E.g., Aviva\'s "Allocation rate" → standard "Contribution allocation %". Mapped once, reused forever.' },
+          { icon: Users, title: "6 Providers Configured", desc: "Aviva, Standard Life, Royal London, Scottish Widows, Aegon, Prudential — with aliases, portal URLs, turnaround times, and Origo support flags." },
+          { icon: Zap, title: "Plan Prefix Rules", desc: "TK* → Personal Pensions, AV* → Platform, FP* → Legacy Friends Provident. Auto-routes to correct department and phone number." },
+        ].map(item => (
+          <div key={item.title} className="rounded-xl border-2 border-gray-100 p-8 flex items-start gap-5">
+            <div className="w-12 h-12 rounded-xl bg-[hsl(197,71%,20%)]/10 flex items-center justify-center shrink-0">
+              <item.icon className="w-6 h-6 text-[hsl(197,71%,20%)]" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">{item.title}</h3>
+              <p className="text-gray-600 leading-relaxed">{item.desc}</p>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   ),
@@ -261,9 +322,7 @@ const slides: React.FC[] = [
           </p>
         </div>
       </div>
-      <div className="mt-auto rounded-xl overflow-hidden">
-        <img src={screenshotFounderView} alt="Founder View" className="w-full h-48 object-cover object-top rounded-xl border border-white/10" />
-      </div>
+      <p className="mt-auto text-center text-sm text-white/40 italic">Full Founder View analytics available in the live app</p>
     </div>
   ),
 
