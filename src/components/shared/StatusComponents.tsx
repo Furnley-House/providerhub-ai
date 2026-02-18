@@ -6,10 +6,18 @@ export function ConfidenceBadge({ level }: { level: Confidence }) {
     medium: "bg-warning/15 text-warning",
     low: "bg-overdue/15 text-overdue",
   };
+  const tooltips: Record<Confidence, string> = {
+    high: "AI is highly confident in this extracted value",
+    medium: "AI has moderate confidence — may need review",
+    low: "AI has low confidence — likely needs manual verification",
+  };
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${styles[level]}`}>
+    <span
+      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${styles[level]}`}
+      title={tooltips[level]}
+    >
       <span className={`h-1.5 w-1.5 rounded-full ${level === 'high' ? 'bg-success' : level === 'medium' ? 'bg-warning' : 'bg-overdue'}`} />
-      {level.charAt(0).toUpperCase() + level.slice(1)}
+      {level.charAt(0).toUpperCase() + level.slice(1)} confidence
     </span>
   );
 }
