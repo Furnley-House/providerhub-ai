@@ -17,6 +17,7 @@ import ProviderDirectory from "./pages/ProviderDirectory";
 import Automations from "./pages/Automations";
 import CallAssist from "./pages/CallAssist";
 import FounderView from "./pages/FounderView";
+import Presentation from "./pages/Presentation";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/auth" element={<Auth />} />
+            <Route path="/presentation" element={<Presentation />} />
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
               <Route path="/" element={<Dashboard />} />
               <Route path="/cases" element={<Cases />} />
