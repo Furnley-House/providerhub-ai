@@ -39,7 +39,7 @@ Question: ${question}`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "openai/gpt-5-nano",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
@@ -49,6 +49,8 @@ Question: ${question}`;
 
     if (!aiResponse.ok) {
       const status = aiResponse.status;
+      const errorBody = await aiResponse.text();
+      console.error("AI gateway error:", status, errorBody);
       if (status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again shortly." }), {
           status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -59,7 +61,7 @@ Question: ${question}`;
           status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      throw new Error(`AI gateway returned ${status}`);
+      throw new Error(`AI gateway returned ${status}: ${errorBody}`);
     }
 
     const result = await aiResponse.json();
