@@ -27,11 +27,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<{ full_name: string | null; role: string } | null>(null);
 
   useEffect(() => {
+    // Clear any stale/corrupt session tokens on mount to prevent infinite refresh loops
+    const clearStaleSession = () => {
+      const keys = Object.keys(localStorage);
+      for (const key of keys) {
+        if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
+          try {
+            const raw = localStorage.getItem(key);
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              const expiresAt = parsed?.expires_at;
+              if (expiresAt && expiresAt * 1000 < Date.now()) {
+                localStorage.removeItem(key);
+                console.log('Cleared expired auth session from localStorage');
+              }
+            }
+          } catch {
+            localStorage.removeItem(key);
+            console.log('Cleared corrupt auth session from localStorage');
+          }
+        }
+      }
+    };
+    clearStaleSession();
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        // Fetch profile after auth state change (deferred to avoid deadlock)
         setTimeout(() => fetchProfile(session.user.id), 0);
       } else {
         setProfile(null);
@@ -39,7 +62,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        // Session is invalid — sign out to clear tokens
+        console.warn('Session retrieval failed, clearing auth state:', error.message);
+        supabase.auth.signOut().catch(() => {});
+        setSession(null);
+        setUser(null);
+        setProfile(null);
+        setLoading(false);
+        return;
+      }
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) fetchProfile(session.user.id);

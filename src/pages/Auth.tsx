@@ -37,7 +37,12 @@ const Auth = () => {
         navigate("/");
       }
     } catch (err: any) {
-      setError(err.message);
+      const msg = err.message || "Unknown error";
+      if (msg === "Failed to fetch" || msg.includes("ERR_CONNECTION")) {
+        setError("Unable to reach the server. Please check your internet connection, disable any VPN/ad-blocker, or try an incognito window.");
+      } else {
+        setError(msg);
+      }
     } finally {
       setLoading(false);
     }
