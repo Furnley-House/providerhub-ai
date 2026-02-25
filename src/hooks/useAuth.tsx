@@ -27,7 +27,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<{ full_name: string | null; role: string } | null>(null);
 
   useEffect(() => {
-    // Clear any stale/corrupt session tokens on mount to prevent infinite refresh loops
+    // Aggressively clear any stale/corrupt session tokens on mount
     const clearStaleSession = () => {
       const keys = Object.keys(localStorage);
       for (const key of keys) {
@@ -37,9 +37,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (raw) {
               const parsed = JSON.parse(raw);
               const expiresAt = parsed?.expires_at;
-              if (expiresAt && expiresAt * 1000 < Date.now()) {
+              const accessToken = parsed?.access_token;
+              // Clear if expired OR if there's no valid access token
+              if (!accessToken || (expiresAt && expiresAt * 1000 < Date.now())) {
                 localStorage.removeItem(key);
-                console.log('Cleared expired auth session from localStorage');
+                console.log('Cleared stale auth session from localStorage');
               }
             }
           } catch {
