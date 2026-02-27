@@ -1,6 +1,5 @@
-import { Search, Bell, User, LogOut } from "lucide-react";
+import { Search, Bell, User } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
-import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getCases } from "@/services/api";
@@ -8,7 +7,6 @@ import { getCases } from "@/services/api";
 export function AppHeader() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showResults, setShowResults] = useState(false);
-  const { profile, signOut } = useAuth();
   const navigate = useNavigate();
   const wrapperRef = useRef<HTMLDivElement>(null);
 
