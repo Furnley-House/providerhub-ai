@@ -1,6 +1,5 @@
-import { Search, Bell, User, LogOut } from "lucide-react";
+import { Search, Bell, User } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
-import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getCases } from "@/services/api";
@@ -8,7 +7,6 @@ import { getCases } from "@/services/api";
 export function AppHeader() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showResults, setShowResults] = useState(false);
-  const { profile, signOut } = useAuth();
   const navigate = useNavigate();
   const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -82,17 +80,10 @@ export function AppHeader() {
             <User className="h-4 w-4 text-primary-foreground" />
           </div>
           <div className="hidden sm:block">
-            <p className="text-sm font-medium text-foreground">{profile?.full_name || "User"}</p>
-            <p className="text-xs text-muted-foreground capitalize">{profile?.role?.replace("_", " ") || "CA Team"}</p>
+            <p className="text-sm font-medium text-foreground">User</p>
+            <p className="text-xs text-muted-foreground">CA Team</p>
           </div>
         </div>
-        <button
-          onClick={signOut}
-          className="rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-          title="Sign out"
-        >
-          <LogOut className="h-4 w-4" />
-        </button>
       </div>
     </header>
   );
