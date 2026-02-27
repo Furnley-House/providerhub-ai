@@ -25,27 +25,25 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <AuthProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/presentation" element={<Presentation />} />
-            <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/cases" element={<Cases />} />
-              <Route path="/cases/:id" element={<CaseDetail />} />
-              <Route path="/documents" element={<DocumentInbox />} />
-              <Route path="/ceding" element={<CedingChecklist />} />
-              <Route path="/missing-data" element={<MissingData />} />
-              <Route path="/providers" element={<ProviderDirectory />} />
-              <Route path="/automations" element={<Automations />} />
-              <Route path="/call-assist" element={<CallAssist />} />
-              <Route path="/founder" element={<FounderView />} />
-            </Route>
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/presentation" element={<Presentation />} />
+          <Route element={<AppLayout />}>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/cases" element={<Cases />} />
+            <Route path="/cases/:id" element={<CaseDetail />} />
+            <Route path="/documents" element={<DocumentInbox />} />
+            <Route path="/ceding" element={<CedingChecklist />} />
+            <Route path="/missing-data" element={<MissingData />} />
+            <Route path="/providers" element={<ProviderDirectory />} />
+            <Route path="/automations" element={<Automations />} />
+            <Route path="/call-assist" element={<CallAssist />} />
+            <Route path="/founder" element={<FounderView />} />
+          </Route>
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
 );
