@@ -80,17 +80,10 @@ export function AppHeader() {
             <User className="h-4 w-4 text-primary-foreground" />
           </div>
           <div className="hidden sm:block">
-            <p className="text-sm font-medium text-foreground">{profile?.full_name || "User"}</p>
-            <p className="text-xs text-muted-foreground capitalize">{profile?.role?.replace("_", " ") || "CA Team"}</p>
+            <p className="text-sm font-medium text-foreground">User</p>
+            <p className="text-xs text-muted-foreground">CA Team</p>
           </div>
         </div>
-        <button
-          onClick={signOut}
-          className="rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-          title="Sign out"
-        >
-          <LogOut className="h-4 w-4" />
-        </button>
       </div>
     </header>
   );
