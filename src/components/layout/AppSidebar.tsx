@@ -10,6 +10,7 @@ import {
   Phone,
   TrendingUp,
 } from "lucide-react";
+import lionIcon from "@/assets/lion-icon.png";
 
 const navItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -33,14 +34,17 @@ export function AppSidebar({ collapsed, onToggle }: { collapsed: boolean; onTogg
       }`}
     >
       {/* Logo */}
-      <div className="flex h-16 items-center gap-3 border-b border-sidebar-border px-4">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary">
-          <Briefcase className="h-4 w-4 text-sidebar-primary-foreground" />
-        </div>
+      <div className="flex h-16 items-center gap-3 border-b border-sidebar-border px-3">
+        <img src={lionIcon} alt="Furnley House" className="h-9 w-9 shrink-0 rounded-lg object-contain" />
         {!collapsed && (
-          <span className="text-lg font-bold tracking-tight text-sidebar-primary-foreground">
-            ProviderHub
-          </span>
+          <div className="flex flex-col leading-tight">
+            <span className="text-sm font-bold tracking-tight text-sidebar-primary-foreground">
+              FURNLEY HOUSE
+            </span>
+            <span className="text-[10px] font-medium tracking-widest text-sidebar-primary opacity-80">
+              FINANCIAL PLANNING
+            </span>
+          </div>
         )}
       </div>
 
