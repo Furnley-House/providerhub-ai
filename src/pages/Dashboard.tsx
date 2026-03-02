@@ -10,18 +10,15 @@ import { getCases, getTasks } from "@/services/api";
 const Dashboard = () => {
   const { data: cases = [], isLoading: casesLoading } = useQuery({ queryKey: ["cases"], queryFn: getCases });
   const { data: tasks = [], isLoading: tasksLoading } = useQuery({ queryKey: ["tasks"], queryFn: () => getTasks() });
-  
 
   const isLoading = casesLoading || tasksLoading;
 
-  // KPI calculations
   const totalCases = cases.length;
   const activeCases = cases.filter(c => c.status !== 'complete').length;
   const completedCases = cases.filter(c => c.status === 'complete').length;
   const overdueCount = cases.filter(c => c.is_overdue).length;
   const pendingTasks = tasks.filter(t => !t.completed).length;
 
-  // Pipeline stages
   const pipelineStages = [
     { key: 'loa_sent', label: 'LOA Sent', color: 'bg-info' },
     { key: 'loa_processed', label: 'LOA Processed', color: 'bg-info' },
@@ -36,12 +33,8 @@ const Dashboard = () => {
     count: cases.filter(c => c.status === s.key).length,
   }));
 
-
-  // Recent cases (last 5)
   const recentCases = cases.slice(0, 5);
-  
 
-  // Quick actions
   const quickActions = [
     { label: 'New Case', icon: FolderOpen, to: '/cases', description: 'Start a new LOA case' },
     { label: 'Document Inbox', icon: FileText, to: '/documents', description: 'Process uploaded PDFs' },
@@ -73,17 +66,17 @@ const Dashboard = () => {
       </div>
 
       {/* Pipeline Overview */}
-      <div className="rounded-xl border border-border bg-card p-5 mb-6">
+      <div className="theme-card theme-card-accent border border-border bg-card mb-6">
         <div className="flex items-center gap-2 mb-4">
           <BarChart3 className="h-4 w-4 text-primary" />
-          <h2 className="text-sm font-semibold text-foreground">Pipeline Overview</h2>
+          <h2 className="text-sm theme-heading text-foreground">Pipeline Overview</h2>
         </div>
         <div className="flex gap-1">
           {stageCounts.map((stage, i) => {
             const width = totalCases > 0 ? Math.max((stage.count / totalCases) * 100, stage.count > 0 ? 8 : 2) : 100 / stageCounts.length;
             return (
               <div key={stage.key} className="flex-1 min-w-0" style={{ flex: `${width} 1 0%` }}>
-                <div className={`h-2 ${stage.color} ${i === 0 ? 'rounded-l-full' : ''} ${i === stageCounts.length - 1 ? 'rounded-r-full' : ''}`} />
+                <div className={`pipeline-bar h-2 ${stage.color} ${i === 0 ? 'rounded-l-full' : ''} ${i === stageCounts.length - 1 ? 'rounded-r-full' : ''}`} />
                 <p className="mt-2 text-xs font-medium text-foreground text-center">{stage.count}</p>
                 <p className="text-[10px] text-muted-foreground text-center truncate">{stage.label}</p>
               </div>
@@ -94,9 +87,9 @@ const Dashboard = () => {
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Recent Cases */}
-        <div className="lg:col-span-2 rounded-xl border border-border bg-card overflow-hidden">
+        <div className="lg:col-span-2 theme-card theme-card-accent border border-border bg-card overflow-hidden p-0">
           <div className="border-b border-border bg-muted/30 px-5 py-3 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <h2 className="text-sm theme-heading text-foreground flex items-center gap-2">
               <Briefcase className="h-4 w-4 text-primary" /> Recent Cases
             </h2>
             <Link to="/cases" className="text-xs text-primary hover:underline flex items-center gap-1">
@@ -134,9 +127,9 @@ const Dashboard = () => {
 
         {/* Quick Actions */}
         <div className="space-y-6">
-          <div className="rounded-xl border border-border bg-card overflow-hidden">
+          <div className="theme-card theme-card-accent border border-border bg-card overflow-hidden p-0">
             <div className="border-b border-border bg-muted/30 px-5 py-3">
-              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <h2 className="text-sm theme-heading text-foreground flex items-center gap-2">
                 <Zap className="h-4 w-4 text-primary" /> Quick Actions
               </h2>
             </div>
@@ -145,9 +138,9 @@ const Dashboard = () => {
                 <Link
                   key={a.to}
                   to={a.to}
-                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 hover:bg-muted/50 transition-colors"
+                  className="flex items-center gap-3 px-3 py-2.5 hover:bg-muted/50 transition-colors theme-sidebar-item"
                 >
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+                  <div className="flex h-8 w-8 items-center justify-center bg-primary/10 theme-btn" style={{ borderRadius: 'var(--btn-radius)' }}>
                     <a.icon className="h-4 w-4 text-primary" />
                   </div>
                   <div>
@@ -177,13 +170,13 @@ function KPICard({ icon: Icon, label, value, sub, accent }: {
     : 'bg-muted text-muted-foreground';
 
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
+    <div className="kpi-card theme-card border border-border bg-card">
       <div className="flex items-center gap-3">
-        <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${iconBg}`}>
+        <div className={`flex h-9 w-9 items-center justify-center ${iconBg}`} style={{ borderRadius: 'var(--btn-radius)' }}>
           <Icon className="h-4 w-4" />
         </div>
         <div>
-          <p className="text-2xl font-bold text-foreground">{value}</p>
+          <p className="text-2xl font-bold text-foreground theme-heading">{value}</p>
           <p className="text-xs text-muted-foreground">{label}</p>
         </div>
       </div>
@@ -206,7 +199,10 @@ function StatusPill({ status }: { status: string }) {
     pdf_received: 'PDF Received', ceding_in_progress: 'Ceding', complete: 'Complete',
   };
   return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${styles[status] || 'bg-muted text-muted-foreground'}`}>
+    <span
+      className={`theme-badge inline-flex items-center px-2 py-0.5 text-[10px] font-semibold ${styles[status] || 'bg-muted text-muted-foreground'}`}
+      style={{ borderRadius: 'var(--badge-radius)' }}
+    >
       {labels[status] || status}
     </span>
   );

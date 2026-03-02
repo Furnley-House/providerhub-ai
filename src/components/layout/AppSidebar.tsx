@@ -38,7 +38,7 @@ export function AppSidebar({ collapsed, onToggle }: { collapsed: boolean; onTogg
         <img src={lionIcon} alt="Furnley House" className="h-9 w-9 shrink-0 rounded-lg object-contain" />
         {!collapsed && (
           <div className="flex flex-col leading-tight">
-            <span className="text-sm font-bold tracking-tight text-sidebar-primary-foreground">
+            <span className="text-sm font-bold tracking-tight text-sidebar-primary-foreground theme-heading">
               FURNLEY HOUSE
             </span>
             <span className="text-[10px] font-medium tracking-widest text-sidebar-primary opacity-80">
@@ -57,7 +57,7 @@ export function AppSidebar({ collapsed, onToggle }: { collapsed: boolean; onTogg
               <li key={item.url}>
                 <NavLink
                   to={item.url}
-                  className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                  className={`flex items-center gap-3 theme-sidebar-item px-3 py-2.5 text-sm font-medium transition-colors ${
                     isActive
                       ? "bg-sidebar-accent text-sidebar-primary"
                       : "text-sidebar-foreground hover:bg-sidebar-muted hover:text-sidebar-accent-foreground"
