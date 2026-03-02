@@ -3,40 +3,30 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    /* Navy base */
+  /* ===== THEME 1: Ocean (Default — Navy + Teal) ===== */
+  :root,
+  [data-theme="ocean"] {
     --background: 210 20% 98%;
     --foreground: 220 30% 12%;
-
     --card: 0 0% 100%;
     --card-foreground: 220 30% 12%;
-
     --popover: 0 0% 100%;
     --popover-foreground: 220 30% 12%;
-
-    /* Teal primary */
     --primary: 187 70% 38%;
     --primary-foreground: 0 0% 100%;
-
     --secondary: 210 18% 94%;
     --secondary-foreground: 220 30% 12%;
-
     --muted: 210 14% 95%;
     --muted-foreground: 215 14% 46%;
-
     --accent: 187 50% 92%;
     --accent-foreground: 187 70% 28%;
-
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-
     --border: 214 20% 90%;
     --input: 214 20% 90%;
     --ring: 187 70% 38%;
-
     --radius: 0.625rem;
 
-    /* Semantic status colors */
     --success: 152 60% 40%;
     --success-foreground: 0 0% 100%;
     --warning: 38 92% 50%;
@@ -46,7 +36,6 @@
     --overdue: 0 72% 51%;
     --overdue-foreground: 0 0% 100%;
 
-    /* Navy sidebar */
     --sidebar-background: 220 40% 13%;
     --sidebar-foreground: 210 20% 85%;
     --sidebar-primary: 187 70% 52%;
@@ -57,12 +46,10 @@
     --sidebar-ring: 187 70% 52%;
     --sidebar-muted: 220 25% 22%;
 
-    /* Confidence */
     --confidence-high: 152 60% 40%;
     --confidence-medium: 38 92% 50%;
     --confidence-low: 0 72% 51%;
 
-    /* Chart */
     --chart-1: 187 70% 38%;
     --chart-2: 152 60% 40%;
     --chart-3: 38 92% 50%;
@@ -70,44 +57,163 @@
     --chart-5: 0 72% 51%;
   }
 
-  .dark {
-    --background: 220 30% 8%;
-    --foreground: 210 20% 92%;
-
-    --card: 220 30% 12%;
-    --card-foreground: 210 20% 92%;
-
-    --popover: 220 30% 12%;
-    --popover-foreground: 210 20% 92%;
-
-    --primary: 187 70% 52%;
-    --primary-foreground: 220 30% 8%;
-
-    --secondary: 220 25% 18%;
-    --secondary-foreground: 210 20% 92%;
-
-    --muted: 220 25% 16%;
-    --muted-foreground: 215 14% 55%;
-
-    --accent: 187 40% 18%;
-    --accent-foreground: 187 70% 62%;
-
-    --destructive: 0 62% 30%;
+  /* ===== THEME 2: Furnley (Reference — Navy + Gold/Amber) ===== */
+  [data-theme="furnley"] {
+    --background: 40 30% 97%;
+    --foreground: 220 35% 14%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 35% 14%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 35% 14%;
+    --primary: 38 85% 48%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 40 20% 93%;
+    --secondary-foreground: 220 35% 14%;
+    --muted: 40 14% 95%;
+    --muted-foreground: 220 12% 46%;
+    --accent: 38 60% 90%;
+    --accent-foreground: 38 85% 30%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
+    --border: 40 18% 88%;
+    --input: 40 18% 88%;
+    --ring: 38 85% 48%;
+    --radius: 0.625rem;
 
-    --border: 220 20% 20%;
-    --input: 220 20% 20%;
-    --ring: 187 70% 52%;
+    --success: 152 60% 40%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 38 92% 14%;
+    --info: 199 89% 48%;
+    --info-foreground: 0 0% 100%;
+    --overdue: 0 72% 51%;
+    --overdue-foreground: 0 0% 100%;
 
-    --sidebar-background: 220 40% 8%;
-    --sidebar-foreground: 210 20% 80%;
-    --sidebar-primary: 187 70% 52%;
+    --sidebar-background: 220 38% 15%;
+    --sidebar-foreground: 40 20% 85%;
+    --sidebar-primary: 38 85% 55%;
+    --sidebar-primary-foreground: 220 38% 12%;
+    --sidebar-accent: 220 30% 20%;
+    --sidebar-accent-foreground: 40 30% 92%;
+    --sidebar-border: 220 25% 22%;
+    --sidebar-ring: 38 85% 55%;
+    --sidebar-muted: 220 25% 24%;
+
+    --confidence-high: 152 60% 40%;
+    --confidence-medium: 38 92% 50%;
+    --confidence-low: 0 72% 51%;
+
+    --chart-1: 38 85% 48%;
+    --chart-2: 152 60% 40%;
+    --chart-3: 199 89% 48%;
+    --chart-4: 220 40% 50%;
+    --chart-5: 0 72% 51%;
+  }
+
+  /* ===== THEME 3: Forest (Dark Green + Emerald) ===== */
+  [data-theme="forest"] {
+    --background: 140 20% 97%;
+    --foreground: 150 30% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 150 30% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 150 30% 12%;
+    --primary: 152 65% 36%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 140 16% 93%;
+    --secondary-foreground: 150 30% 12%;
+    --muted: 140 12% 95%;
+    --muted-foreground: 150 12% 46%;
+    --accent: 152 45% 90%;
+    --accent-foreground: 152 65% 26%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 140 16% 88%;
+    --input: 140 16% 88%;
+    --ring: 152 65% 36%;
+    --radius: 0.625rem;
+
+    --success: 152 60% 40%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 38 92% 14%;
+    --info: 199 89% 48%;
+    --info-foreground: 0 0% 100%;
+    --overdue: 0 72% 51%;
+    --overdue-foreground: 0 0% 100%;
+
+    --sidebar-background: 150 35% 13%;
+    --sidebar-foreground: 140 18% 85%;
+    --sidebar-primary: 152 65% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 35% 14%;
-    --sidebar-accent-foreground: 210 20% 85%;
-    --sidebar-border: 220 30% 15%;
-    --sidebar-ring: 187 70% 52%;
-    --sidebar-muted: 220 25% 14%;
+    --sidebar-accent: 150 28% 18%;
+    --sidebar-accent-foreground: 140 20% 92%;
+    --sidebar-border: 150 25% 20%;
+    --sidebar-ring: 152 65% 50%;
+    --sidebar-muted: 150 22% 22%;
+
+    --confidence-high: 152 60% 40%;
+    --confidence-medium: 38 92% 50%;
+    --confidence-low: 0 72% 51%;
+
+    --chart-1: 152 65% 36%;
+    --chart-2: 38 92% 50%;
+    --chart-3: 199 89% 48%;
+    --chart-4: 280 50% 50%;
+    --chart-5: 0 72% 51%;
+  }
+
+  /* ===== THEME 4: Royal (Deep Purple + Gold) ===== */
+  [data-theme="royal"] {
+    --background: 260 20% 97%;
+    --foreground: 260 30% 14%;
+    --card: 0 0% 100%;
+    --card-foreground: 260 30% 14%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 260 30% 14%;
+    --primary: 262 60% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 260 16% 93%;
+    --secondary-foreground: 260 30% 14%;
+    --muted: 260 12% 95%;
+    --muted-foreground: 260 12% 46%;
+    --accent: 262 40% 92%;
+    --accent-foreground: 262 60% 35%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 260 16% 88%;
+    --input: 260 16% 88%;
+    --ring: 262 60% 50%;
+    --radius: 0.625rem;
+
+    --success: 152 60% 40%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 38 92% 14%;
+    --info: 199 89% 48%;
+    --info-foreground: 0 0% 100%;
+    --overdue: 0 72% 51%;
+    --overdue-foreground: 0 0% 100%;
+
+    --sidebar-background: 262 40% 14%;
+    --sidebar-foreground: 260 18% 85%;
+    --sidebar-primary: 42 85% 55%;
+    --sidebar-primary-foreground: 262 40% 12%;
+    --sidebar-accent: 262 30% 20%;
+    --sidebar-accent-foreground: 260 20% 92%;
+    --sidebar-border: 262 25% 22%;
+    --sidebar-ring: 42 85% 55%;
+    --sidebar-muted: 262 22% 22%;
+
+    --confidence-high: 152 60% 40%;
+    --confidence-medium: 38 92% 50%;
+    --confidence-low: 0 72% 51%;
+
+    --chart-1: 262 60% 50%;
+    --chart-2: 42 85% 55%;
+    --chart-3: 152 60% 40%;
+    --chart-4: 199 89% 48%;
+    --chart-5: 0 72% 51%;
   }
 }
 

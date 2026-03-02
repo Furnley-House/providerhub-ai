@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getCases } from "@/services/api";
+import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 
 export function AppHeader() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -70,7 +71,8 @@ export function AppHeader() {
           </div>
         )}
       </div>
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
+        <ThemeSwitcher />
         <button className="relative rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
           <Bell className="h-5 w-5" />
           <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-overdue" />
