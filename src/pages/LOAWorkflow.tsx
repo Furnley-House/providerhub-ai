@@ -253,8 +253,8 @@ export default function LOAWorkflow() {
         {/* Visual Flow */}
         <section>
           <h2 className="text-2xl font-bold text-foreground mb-6">End-to-End Process Flow</h2>
-          <div className="rounded-xl border border-border bg-card p-6 overflow-x-auto">
-            <div className="flex items-center gap-1 min-w-[900px]">
+          <div className="rounded-xl border border-border bg-card p-6">
+            <div className="flex flex-wrap items-center justify-center gap-3">
               {flowSteps.map((step, i) => (
                 <div key={i} className="flex items-center">
                   <div className="flex flex-col items-center text-center w-24">
