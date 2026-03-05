@@ -401,9 +401,11 @@ export default function LOAWorkflow() {
 
                     <ul className="ml-16 space-y-2">
                       {step.details.map((detail, i) => (
-                        <li key={i} className="flex items-start gap-2.5 text-sm text-foreground/80">
-                          <CheckCircle className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-                          {detail}
+                        <li key={i} className="flex items-baseline gap-2.5 text-sm text-foreground/80">
+                          <span className="inline-flex items-center shrink-0" style={{ width: 16, height: 16, position: 'relative', top: '2px' }}>
+                            <CheckCircle className="w-4 h-4 text-primary" />
+                          </span>
+                          <span>{detail}</span>
                         </li>
                       ))}
                     </ul>
