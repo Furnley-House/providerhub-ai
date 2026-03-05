@@ -1,7 +1,10 @@
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 import {
   ArrowLeft, FileText, Send, Clock, Phone, Cpu, CheckCircle, AlertTriangle,
-  PhoneCall, BrainCircuit, RefreshCw, ExternalLink, Mail, Shield, Zap, Users
+  PhoneCall, BrainCircuit, RefreshCw, ExternalLink, Mail, Shield, Zap, Users, Download, Loader2
 } from "lucide-react";
 
 const steps = [
@@ -155,23 +158,81 @@ const flowSteps = [
 
 export default function LOAWorkflow() {
   const navigate = useNavigate();
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownload = async () => {
+    if (!contentRef.current) return;
+    setDownloading(true);
+    try {
+      const canvas = await html2canvas(contentRef.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        windowWidth: 1100,
+      });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = pageWidth - 20;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const availableHeight = pageHeight - 20;
+
+      let remainingHeight = imgHeight;
+      let sourceY = 0;
+      let firstPage = true;
+
+      while (remainingHeight > 0) {
+        const sliceHeight = Math.min(availableHeight, remainingHeight);
+        const sliceCanvasHeight = (sliceHeight / imgWidth) * canvas.width;
+        const sliceCanvas = document.createElement("canvas");
+        sliceCanvas.width = canvas.width;
+        sliceCanvas.height = sliceCanvasHeight;
+        const ctx = sliceCanvas.getContext("2d");
+        ctx?.drawImage(canvas, 0, sourceY, canvas.width, sliceCanvasHeight, 0, 0, canvas.width, sliceCanvasHeight);
+        const sliceData = sliceCanvas.toDataURL("image/png");
+        if (!firstPage) pdf.addPage();
+        pdf.addImage(sliceData, "PNG", 10, 10, imgWidth, sliceHeight);
+        sourceY += sliceCanvasHeight;
+        remainingHeight -= availableHeight;
+        firstPage = false;
+      }
+
+      pdf.save("LOA-Workflow-Document.pdf");
+    } catch (err) {
+      console.error("PDF generation failed:", err);
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-30 bg-card border-b border-border backdrop-blur">
-        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center gap-4">
-          <button onClick={() => navigate("/")} className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div>
-            <h1 className="text-xl font-bold text-foreground">LOA & Ceding Data Collection Workflow</h1>
-            <p className="text-sm text-muted-foreground">Stakeholder Reference Document</p>
+      <header className="sticky top-0 z-30 bg-card border-b border-border backdrop-blur print:hidden">
+        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button onClick={() => navigate("/")} className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <div>
+              <h1 className="text-xl font-bold text-foreground">LOA & Ceding Data Collection Workflow</h1>
+              <p className="text-sm text-muted-foreground">Stakeholder Reference Document</p>
+            </div>
           </div>
+          <button
+            onClick={handleDownload}
+            disabled={downloading}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-60"
+          >
+            {downloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            {downloading ? "Generating…" : "Download PDF"}
+          </button>
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-6 py-10 space-y-16">
+      <main ref={contentRef} className="max-w-5xl mx-auto px-6 py-10 space-y-16">
         {/* Executive Summary */}
         <section>
           <h2 className="text-2xl font-bold text-foreground mb-4">Executive Summary</h2>
@@ -192,8 +253,8 @@ export default function LOAWorkflow() {
         {/* Visual Flow */}
         <section>
           <h2 className="text-2xl font-bold text-foreground mb-6">End-to-End Process Flow</h2>
-          <div className="rounded-xl border border-border bg-card p-6 overflow-x-auto">
-            <div className="flex items-center gap-1 min-w-[900px]">
+          <div className="rounded-xl border border-border bg-card p-6">
+            <div className="flex flex-wrap items-center justify-center gap-3">
               {flowSteps.map((step, i) => (
                 <div key={i} className="flex items-center">
                   <div className="flex flex-col items-center text-center w-24">
