@@ -358,38 +358,6 @@ export default function LOAWorkflow() {
           </div>
         </section>
 
-        {/* Timeline Comparison */}
-        <section>
-          <h2 className="text-2xl font-bold text-foreground mb-6">Timeline Comparison</h2>
-          <div className="rounded-xl border border-border bg-card p-6 space-y-6">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-semibold text-foreground">Manual Process</span>
-                <span className="text-sm font-bold text-destructive">15–20+ days</span>
-              </div>
-              <div className="h-3 rounded-full bg-muted overflow-hidden">
-                <div className="h-full rounded-full bg-destructive/60" style={{ width: "100%" }} />
-              </div>
-              <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
-                <span>LOA Sent</span>
-                <span>Provider Processing (10-15d)</span>
-                <span>Data Available (+4-5d)</span>
-              </div>
-            </div>
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-semibold text-foreground">With ORIGO + ProviderHub</span>
-                <span className="text-sm font-bold text-primary">3–5 days</span>
-              </div>
-              <div className="h-3 rounded-full bg-muted overflow-hidden">
-                <div className="h-full rounded-full bg-primary/60" style={{ width: "25%" }} />
-              </div>
-              <div className="flex text-[10px] text-muted-foreground mt-1">
-                <span>ORIGO Submission → Data Received & Extracted</span>
-              </div>
-            </div>
-          </div>
-        </section>
 
         {/* Footer note */}
         <section className="pb-10">
