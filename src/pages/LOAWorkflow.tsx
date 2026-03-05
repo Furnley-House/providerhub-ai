@@ -165,38 +165,73 @@ export default function LOAWorkflow() {
     if (!contentRef.current) return;
     setDownloading(true);
     try {
-      const canvas = await html2canvas(contentRef.current, {
+      // Find page-break elements to determine split points
+      const breakElements = contentRef.current.querySelectorAll(".break-before-page");
+      const breakOffsets = Array.from(breakElements).map(el => (el as HTMLElement).offsetTop - contentRef.current!.offsetTop);
+      
+      // Build split points: [0, break1, break2, ..., totalHeight]
+      const totalHeight = contentRef.current.scrollHeight;
+      const splits = [0, ...breakOffsets, totalHeight];
+
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = pageWidth - 20;
+      const availableHeight = pageHeight - 20;
+
+      const fullCanvas = await html2canvas(contentRef.current, {
         scale: 2,
         useCORS: true,
         logging: false,
         windowWidth: 1100,
       });
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = pageWidth - 20;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      const availableHeight = pageHeight - 20;
 
-      let remainingHeight = imgHeight;
-      let sourceY = 0;
+      const pxToMm = imgWidth / fullCanvas.width;
       let firstPage = true;
 
-      while (remainingHeight > 0) {
-        const sliceHeight = Math.min(availableHeight, remainingHeight);
-        const sliceCanvasHeight = (sliceHeight / imgWidth) * canvas.width;
+      for (let s = 0; s < splits.length - 1; s++) {
+        const startPx = splits[s] * (fullCanvas.width / contentRef.current!.offsetWidth) * (fullCanvas.height / contentRef.current!.scrollHeight / (fullCanvas.width / contentRef.current!.offsetWidth));
+        const endPx = splits[s + 1] * (fullCanvas.width / contentRef.current!.offsetWidth) * (fullCanvas.height / contentRef.current!.scrollHeight / (fullCanvas.width / contentRef.current!.offsetWidth));
+        
+        // Simpler: use ratio
+        const ratio = fullCanvas.height / totalHeight;
+        const srcY = Math.round(splits[s] * ratio);
+        const srcH = Math.round((splits[s + 1] - splits[s]) * ratio);
+        if (srcH <= 0) continue;
+
+        const sectionImgHeight = srcH * pxToMm;
+
+        // If section fits in one page
         const sliceCanvas = document.createElement("canvas");
-        sliceCanvas.width = canvas.width;
-        sliceCanvas.height = sliceCanvasHeight;
+        sliceCanvas.width = fullCanvas.width;
+        sliceCanvas.height = srcH;
         const ctx = sliceCanvas.getContext("2d");
-        ctx?.drawImage(canvas, 0, sourceY, canvas.width, sliceCanvasHeight, 0, 0, canvas.width, sliceCanvasHeight);
+        ctx?.drawImage(fullCanvas, 0, srcY, fullCanvas.width, srcH, 0, 0, fullCanvas.width, srcH);
         const sliceData = sliceCanvas.toDataURL("image/png");
-        if (!firstPage) pdf.addPage();
-        pdf.addImage(sliceData, "PNG", 10, 10, imgWidth, sliceHeight);
-        sourceY += sliceCanvasHeight;
-        remainingHeight -= availableHeight;
-        firstPage = false;
+
+        if (sectionImgHeight <= availableHeight) {
+          if (!firstPage) pdf.addPage();
+          pdf.addImage(sliceData, "PNG", 10, 10, imgWidth, sectionImgHeight);
+          firstPage = false;
+        } else {
+          // Section too tall — split into sub-pages
+          let remaining = sectionImgHeight;
+          let subSrcY = 0;
+          while (remaining > 0) {
+            const subH = Math.min(availableHeight, remaining);
+            const subSrcH = Math.round(subH / pxToMm);
+            const subCanvas = document.createElement("canvas");
+            subCanvas.width = sliceCanvas.width;
+            subCanvas.height = subSrcH;
+            const subCtx = subCanvas.getContext("2d");
+            subCtx?.drawImage(sliceCanvas, 0, subSrcY, sliceCanvas.width, subSrcH, 0, 0, sliceCanvas.width, subSrcH);
+            if (!firstPage) pdf.addPage();
+            pdf.addImage(subCanvas.toDataURL("image/png"), "PNG", 10, 10, imgWidth, subH);
+            subSrcY += subSrcH;
+            remaining -= availableHeight;
+            firstPage = false;
+          }
+        }
       }
 
       pdf.save("LOA-Workflow-Document.pdf");
