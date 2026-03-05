@@ -242,9 +242,6 @@ export default function LOAWorkflow() {
 
       const addLogoHeader = (doc: jsPDF) => {
         doc.addImage(logoImg, "PNG", 10, 3, logoW, logoH);
-        doc.setFontSize(7);
-        doc.setTextColor(120, 120, 120);
-        doc.text("Furnley House", 10 + logoW + 3, 8);
         doc.setDrawColor(220, 220, 220);
         doc.line(10, headerH - 1, 200, headerH - 1);
       };
