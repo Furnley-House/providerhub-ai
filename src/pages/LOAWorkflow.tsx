@@ -233,7 +233,7 @@ export default function LOAWorkflow() {
 
       // Load logo for header
       const logoImg = new Image();
-      logoImg.src = lionIcon;
+      logoImg.src = logoDark;
       await new Promise((resolve) => { logoImg.onload = resolve; logoImg.onerror = resolve; });
 
       const logoH = 8; // mm
