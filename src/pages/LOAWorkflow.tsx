@@ -165,38 +165,73 @@ export default function LOAWorkflow() {
     if (!contentRef.current) return;
     setDownloading(true);
     try {
-      const canvas = await html2canvas(contentRef.current, {
+      // Find page-break elements to determine split points
+      const breakElements = contentRef.current.querySelectorAll(".break-before-page");
+      const breakOffsets = Array.from(breakElements).map(el => (el as HTMLElement).offsetTop - contentRef.current!.offsetTop);
+      
+      // Build split points: [0, break1, break2, ..., totalHeight]
+      const totalHeight = contentRef.current.scrollHeight;
+      const splits = [0, ...breakOffsets, totalHeight];
+
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = pageWidth - 20;
+      const availableHeight = pageHeight - 20;
+
+      const fullCanvas = await html2canvas(contentRef.current, {
         scale: 2,
         useCORS: true,
         logging: false,
         windowWidth: 1100,
       });
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = pageWidth - 20;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      const availableHeight = pageHeight - 20;
 
-      let remainingHeight = imgHeight;
-      let sourceY = 0;
+      const pxToMm = imgWidth / fullCanvas.width;
       let firstPage = true;
 
-      while (remainingHeight > 0) {
-        const sliceHeight = Math.min(availableHeight, remainingHeight);
-        const sliceCanvasHeight = (sliceHeight / imgWidth) * canvas.width;
+      for (let s = 0; s < splits.length - 1; s++) {
+        const startPx = splits[s] * (fullCanvas.width / contentRef.current!.offsetWidth) * (fullCanvas.height / contentRef.current!.scrollHeight / (fullCanvas.width / contentRef.current!.offsetWidth));
+        const endPx = splits[s + 1] * (fullCanvas.width / contentRef.current!.offsetWidth) * (fullCanvas.height / contentRef.current!.scrollHeight / (fullCanvas.width / contentRef.current!.offsetWidth));
+        
+        // Simpler: use ratio
+        const ratio = fullCanvas.height / totalHeight;
+        const srcY = Math.round(splits[s] * ratio);
+        const srcH = Math.round((splits[s + 1] - splits[s]) * ratio);
+        if (srcH <= 0) continue;
+
+        const sectionImgHeight = srcH * pxToMm;
+
+        // If section fits in one page
         const sliceCanvas = document.createElement("canvas");
-        sliceCanvas.width = canvas.width;
-        sliceCanvas.height = sliceCanvasHeight;
+        sliceCanvas.width = fullCanvas.width;
+        sliceCanvas.height = srcH;
         const ctx = sliceCanvas.getContext("2d");
-        ctx?.drawImage(canvas, 0, sourceY, canvas.width, sliceCanvasHeight, 0, 0, canvas.width, sliceCanvasHeight);
+        ctx?.drawImage(fullCanvas, 0, srcY, fullCanvas.width, srcH, 0, 0, fullCanvas.width, srcH);
         const sliceData = sliceCanvas.toDataURL("image/png");
-        if (!firstPage) pdf.addPage();
-        pdf.addImage(sliceData, "PNG", 10, 10, imgWidth, sliceHeight);
-        sourceY += sliceCanvasHeight;
-        remainingHeight -= availableHeight;
-        firstPage = false;
+
+        if (sectionImgHeight <= availableHeight) {
+          if (!firstPage) pdf.addPage();
+          pdf.addImage(sliceData, "PNG", 10, 10, imgWidth, sectionImgHeight);
+          firstPage = false;
+        } else {
+          // Section too tall — split into sub-pages
+          let remaining = sectionImgHeight;
+          let subSrcY = 0;
+          while (remaining > 0) {
+            const subH = Math.min(availableHeight, remaining);
+            const subSrcH = Math.round(subH / pxToMm);
+            const subCanvas = document.createElement("canvas");
+            subCanvas.width = sliceCanvas.width;
+            subCanvas.height = subSrcH;
+            const subCtx = subCanvas.getContext("2d");
+            subCtx?.drawImage(sliceCanvas, 0, subSrcY, sliceCanvas.width, subSrcH, 0, 0, sliceCanvas.width, subSrcH);
+            if (!firstPage) pdf.addPage();
+            pdf.addImage(subCanvas.toDataURL("image/png"), "PNG", 10, 10, imgWidth, subH);
+            subSrcY += subSrcH;
+            remaining -= availableHeight;
+            firstPage = false;
+          }
+        }
       }
 
       pdf.save("LOA-Workflow-Document.pdf");
@@ -278,7 +313,7 @@ export default function LOAWorkflow() {
           <h2 className="text-2xl font-bold text-foreground mb-6">Detailed Process Steps</h2>
           <div className="space-y-6">
             {steps.map((step) => (
-              <div key={step.number} className="rounded-xl border border-border bg-card overflow-hidden">
+              <div key={step.number} className={`rounded-xl border border-border bg-card overflow-hidden${step.number === 3 || step.number === 8 ? " break-before-page" : ""}`}>
                 <div className="p-6">
                   <div className="flex items-start gap-4 mb-4">
                     <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
@@ -358,38 +393,6 @@ export default function LOAWorkflow() {
           </div>
         </section>
 
-        {/* Timeline Comparison */}
-        <section>
-          <h2 className="text-2xl font-bold text-foreground mb-6">Timeline Comparison</h2>
-          <div className="rounded-xl border border-border bg-card p-6 space-y-6">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-semibold text-foreground">Manual Process</span>
-                <span className="text-sm font-bold text-destructive">15–20+ days</span>
-              </div>
-              <div className="h-3 rounded-full bg-muted overflow-hidden">
-                <div className="h-full rounded-full bg-destructive/60" style={{ width: "100%" }} />
-              </div>
-              <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
-                <span>LOA Sent</span>
-                <span>Provider Processing (10-15d)</span>
-                <span>Data Available (+4-5d)</span>
-              </div>
-            </div>
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-semibold text-foreground">With ORIGO + ProviderHub</span>
-                <span className="text-sm font-bold text-primary">3–5 days</span>
-              </div>
-              <div className="h-3 rounded-full bg-muted overflow-hidden">
-                <div className="h-full rounded-full bg-primary/60" style={{ width: "25%" }} />
-              </div>
-              <div className="flex text-[10px] text-muted-foreground mt-1">
-                <span>ORIGO Submission → Data Received & Extracted</span>
-              </div>
-            </div>
-          </div>
-        </section>
 
         {/* Footer note */}
         <section className="pb-10">
