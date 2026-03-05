@@ -249,13 +249,26 @@ export default function LOAWorkflow() {
       const usablePageH = pageHeight - headerH;
       const canvasDataUrl = canvas.toDataURL("image/png");
 
+      const drawClippedPage = (doc: jsPDF, yStart: number, clipHeight: number) => {
+        addLogoHeader(doc);
+        // Save state, clip to usable area, draw image, restore
+        doc.internal.write('q'); // save graphics state
+        // Clip rectangle: x, y, width, height (in mm)
+        const clipY = headerH;
+        doc.internal.write(
+          `${(0 * 2.835).toFixed(2)} ${((pageHeight - clipY) * 2.835).toFixed(2)} ${(imgWidth * 2.835).toFixed(2)} ${(-clipHeight * 2.835).toFixed(2)} re W n`
+        );
+        doc.addImage(canvasDataUrl, "PNG", 0, headerH - yStart, imgWidth, imgHeight);
+        doc.internal.write('Q'); // restore graphics state
+      };
+
       if (splitYs.length === 0) {
         let position = 0;
         let pageNum = 0;
         while (position < imgHeight) {
           if (pageNum > 0) pdf.addPage();
-          addLogoHeader(pdf);
-          pdf.addImage(canvasDataUrl, "PNG", 0, headerH - position, imgWidth, imgHeight);
+          const remaining = imgHeight - position;
+          drawClippedPage(pdf, position, Math.min(usablePageH, remaining));
           position += usablePageH;
           pageNum++;
         }
@@ -270,15 +283,8 @@ export default function LOAWorkflow() {
           let innerPos = 0;
           while (innerPos < sectionHeight) {
             if (pageNum > 0) pdf.addPage();
-            addLogoHeader(pdf);
-            pdf.addImage(
-              canvasDataUrl,
-              "PNG",
-              0,
-              headerH - (startY + innerPos),
-              imgWidth,
-              imgHeight
-            );
+            const remaining = sectionHeight - innerPos;
+            drawClippedPage(pdf, startY + innerPos, Math.min(usablePageH, remaining));
             innerPos += usablePageH;
             pageNum++;
           }
