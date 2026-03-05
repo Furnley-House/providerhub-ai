@@ -252,14 +252,13 @@ export default function LOAWorkflow() {
       const drawClippedPage = (doc: jsPDF, yStart: number, clipHeight: number) => {
         addLogoHeader(doc);
         // Save state, clip to usable area, draw image, restore
-        doc.internal.write('q'); // save graphics state
-        // Clip rectangle: x, y, width, height (in mm)
+        (doc.internal as any).write('q');
         const clipY = headerH;
-        doc.internal.write(
+        (doc.internal as any).write(
           `${(0 * 2.835).toFixed(2)} ${((pageHeight - clipY) * 2.835).toFixed(2)} ${(imgWidth * 2.835).toFixed(2)} ${(-clipHeight * 2.835).toFixed(2)} re W n`
         );
         doc.addImage(canvasDataUrl, "PNG", 0, headerH - yStart, imgWidth, imgHeight);
-        doc.internal.write('Q'); // restore graphics state
+        (doc.internal as any).write('Q');
       };
 
       if (splitYs.length === 0) {
