@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import lionIcon from "@/assets/lion-icon.png";
 import {
   ArrowLeft,
   FileText,
@@ -230,36 +231,59 @@ export default function LOAWorkflow() {
       });
       splitYs.sort((a, b) => a - b);
 
+      // Load logo for header
+      const logoImg = new Image();
+      logoImg.src = lionIcon;
+      await new Promise((resolve) => { logoImg.onload = resolve; logoImg.onerror = resolve; });
+
+      const logoH = 8; // mm
+      const logoW = (logoImg.naturalWidth / logoImg.naturalHeight) * logoH;
+      const headerH = 14; // mm reserved for logo header
+
+      const addLogoHeader = (doc: jsPDF) => {
+        doc.addImage(logoImg, "PNG", 10, 3, logoW, logoH);
+        doc.setFontSize(7);
+        doc.setTextColor(120, 120, 120);
+        doc.text("Furnley House", 10 + logoW + 3, 8);
+        doc.setDrawColor(220, 220, 220);
+        doc.line(10, headerH - 1, 200, headerH - 1);
+      };
+
+      const usablePageH = pageHeight - headerH;
+      const canvasDataUrl = canvas.toDataURL("image/png");
+
       if (splitYs.length === 0) {
-        // Fallback: simple slice
         let position = 0;
+        let pageNum = 0;
         while (position < imgHeight) {
-          if (position > 0) pdf.addPage();
-          pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, -position, imgWidth, imgHeight);
-          position += pageHeight;
+          if (pageNum > 0) pdf.addPage();
+          addLogoHeader(pdf);
+          pdf.addImage(canvasDataUrl, "PNG", 0, headerH - position, imgWidth, imgHeight);
+          position += usablePageH;
+          pageNum++;
         }
       } else {
-        // Use split points
         const allSplits = [0, ...splitYs, imgHeight];
+        let pageNum = 0;
         for (let i = 0; i < allSplits.length - 1; i++) {
           const startY = allSplits[i];
           const endY = allSplits[i + 1];
           const sectionHeight = endY - startY;
-          if (i > 0) pdf.addPage();
 
-          // If section is taller than a page, slice it
           let innerPos = 0;
           while (innerPos < sectionHeight) {
-            if (innerPos > 0) pdf.addPage();
+            if (pageNum > 0) pdf.addPage();
+            addLogoHeader(pdf);
             pdf.addImage(
-              canvas.toDataURL("image/png"),
+              canvasDataUrl,
               "PNG",
               0,
-              -(startY + innerPos),
+              headerH - (startY + innerPos),
               imgWidth,
               imgHeight
             );
-            innerPos += pageHeight;
+            innerPos += usablePageH;
+            pageNum++;
           }
         }
       }
@@ -431,16 +455,6 @@ export default function LOAWorkflow() {
             </div>
           </section>
 
-          {/* Footer note */}
-          <section className="pb-10">
-            <div className="rounded-xl border border-border bg-muted/50 p-6 text-center">
-              <p className="text-sm text-muted-foreground">
-                This document is maintained by the Operations & Technology team. For questions or updates, please contact
-                the project lead.
-              </p>
-              <p className="text-xs text-muted-foreground mt-2">Last updated: March 2026</p>
-            </div>
-          </section>
         </main>
       </div>
     </div>
