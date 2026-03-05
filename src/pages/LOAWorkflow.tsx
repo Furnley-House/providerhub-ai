@@ -1,4 +1,7 @@
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 import {
   ArrowLeft,
   FileText,
@@ -16,6 +19,8 @@ import {
   Shield,
   Zap,
   Users,
+  Download,
+  Loader2,
 } from "lucide-react";
 
 const steps = [
@@ -194,198 +199,250 @@ const flowSteps = [
 
 export default function LOAWorkflow() {
   const navigate = useNavigate();
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownload = async () => {
+    if (!contentRef.current) return;
+    setDownloading(true);
+    try {
+      const canvas = await html2canvas(contentRef.current, {
+        scale: 2,
+        useCORS: true,
+        windowWidth: 1100,
+        backgroundColor: "#ffffff",
+      });
+
+      const imgWidth = 210; // A4 mm
+      const pageHeight = 297;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const pdf = new jsPDF("p", "mm", "a4");
+
+      // Find page-break markers
+      const markers = contentRef.current.querySelectorAll(".break-before-page");
+      const splitYs: number[] = [];
+      markers.forEach((el) => {
+        const rect = (el as HTMLElement).getBoundingClientRect();
+        const containerRect = contentRef.current!.getBoundingClientRect();
+        const offsetY = rect.top - containerRect.top;
+        const ratio = imgWidth / canvas.width;
+        splitYs.push((offsetY * 2) * ratio); // scale=2
+      });
+      splitYs.sort((a, b) => a - b);
+
+      if (splitYs.length === 0) {
+        // Fallback: simple slice
+        let position = 0;
+        while (position < imgHeight) {
+          if (position > 0) pdf.addPage();
+          pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, -position, imgWidth, imgHeight);
+          position += pageHeight;
+        }
+      } else {
+        // Use split points
+        const allSplits = [0, ...splitYs, imgHeight];
+        for (let i = 0; i < allSplits.length - 1; i++) {
+          const startY = allSplits[i];
+          const endY = allSplits[i + 1];
+          const sectionHeight = endY - startY;
+          if (i > 0) pdf.addPage();
+
+          // If section is taller than a page, slice it
+          let innerPos = 0;
+          while (innerPos < sectionHeight) {
+            if (innerPos > 0) pdf.addPage();
+            pdf.addImage(
+              canvas.toDataURL("image/png"),
+              "PNG",
+              0,
+              -(startY + innerPos),
+              imgWidth,
+              imgHeight
+            );
+            innerPos += pageHeight;
+          }
+        }
+      }
+
+      pdf.save("LOA-Workflow.pdf");
+    } catch (err) {
+      console.error("PDF generation failed:", err);
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-30 bg-card border-b border-border backdrop-blur">
+      <header className="sticky top-0 z-30 bg-card border-b border-border backdrop-blur print:hidden">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center gap-4">
           <button
             onClick={() => navigate("/")}
-            className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+            className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground print:hidden"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <div>
+          <div className="flex-1">
             <h1 className="text-xl font-bold text-foreground">LOA & Ceding Data Collection Workflow</h1>
             <p className="text-sm text-muted-foreground">Stakeholder Reference Document</p>
           </div>
+          <button
+            onClick={handleDownload}
+            disabled={downloading}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+          >
+            {downloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            {downloading ? "Generating…" : "Download PDF"}
+          </button>
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-6 py-10 space-y-16">
-        {/* Executive Summary */}
-        <section>
-          <h2 className="text-2xl font-bold text-foreground mb-4">LOA & Ceding Data Collection Workflow</h2>
-          <div className="rounded-xl border border-border bg-card p-6">
-            <p className="text-foreground/80 leading-relaxed">
-              This document outlines the end-to-end process for collecting pension and plan data from providers
-              following new client onboarding. The workflow spans multiple systems — CRM, Zoho Sign, provider portals,
-              ORIGO, and our internal ProviderHub application — and covers every step from LOA creation to final data
-              synchronisation with CRM.
-            </p>
-            <p className="text-foreground/80 leading-relaxed mt-3">
-              By combining AI-powered data extraction, intelligent call assistance, and automated integrations, we
-              significantly reduce manual effort, processing time, and the risk of errors.
-            </p>
-          </div>
-        </section>
+      <div ref={contentRef}>
+        <main className="max-w-5xl mx-auto px-6 py-10 space-y-16">
+          {/* Executive Summary */}
+          <section>
+            <h2 className="text-2xl font-bold text-foreground mb-4">LOA & Ceding Data Collection Workflow</h2>
+            <div className="rounded-xl border border-border bg-card p-6">
+              <p className="text-foreground/80 leading-relaxed">
+                This document outlines the end-to-end process for collecting pension and plan data from providers
+                following new client onboarding. The workflow spans multiple systems — CRM, Zoho Sign, provider portals,
+                ORIGO, and our internal ProviderHub application — and covers every step from LOA creation to final data
+                synchronisation with CRM.
+              </p>
+              <p className="text-foreground/80 leading-relaxed mt-3">
+                By combining AI-powered data extraction, intelligent call assistance, and automated integrations, we
+                significantly reduce manual effort, processing time, and the risk of errors.
+              </p>
+            </div>
+          </section>
 
-        {/* Visual Flow */}
-        <section>
-          <h2 className="text-2xl font-bold text-foreground mb-6">End-to-End Process Flow</h2>
-          <div className="rounded-xl border border-border bg-card p-6 overflow-x-auto">
-            <div className="flex items-center gap-1 min-w-[900px]">
-              {flowSteps.map((step, i) => (
-                <div key={i} className="flex items-center">
-                  <div className="flex flex-col items-center text-center w-24">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary mb-2">
-                      {i + 1}
+          {/* Visual Flow - no scroll, wraps for PDF */}
+          <section>
+            <h2 className="text-2xl font-bold text-foreground mb-6">End-to-End Process Flow</h2>
+            <div className="rounded-xl border border-border bg-card p-6">
+              <div className="flex items-center gap-1 flex-wrap justify-center">
+                {flowSteps.map((step, i) => (
+                  <div key={i} className="flex items-center">
+                    <div className="flex flex-col items-center text-center w-24">
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary mb-2">
+                        {i + 1}
+                      </div>
+                      <p className="text-xs font-semibold text-foreground leading-tight">{step.label}</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">{step.sub}</p>
                     </div>
-                    <p className="text-xs font-semibold text-foreground leading-tight">{step.label}</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">{step.sub}</p>
+                    {i < flowSteps.length - 1 && <div className="w-8 h-px bg-border mx-1 shrink-0" />}
                   </div>
-                  {i < flowSteps.length - 1 && <div className="w-8 h-px bg-border mx-1 shrink-0" />}
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* Step-by-step */}
+          <section>
+            <h2 className="text-2xl font-bold text-foreground mb-6">Detailed Process Steps</h2>
+            <div className="space-y-6">
+              {steps.map((step) => (
+                <div
+                  key={step.number}
+                  className={`rounded-xl border border-border bg-card overflow-hidden${step.number === 3 ? " break-before-page" : ""}`}
+                >
+                  <div className="p-6">
+                    <div className="flex items-start gap-4 mb-4">
+                      <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                        <step.icon className="w-6 h-6 text-primary" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <h3 className="text-lg font-bold text-foreground">
+                            Step {step.number}: {step.title}
+                          </h3>
+                          <div className="flex gap-1.5">
+                            {step.systems.map((sys) => (
+                              <span
+                                key={sys}
+                                className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-accent text-accent-foreground"
+                              >
+                                {sys}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                        <p className="text-foreground/70 mt-2 leading-relaxed">{step.description}</p>
+                      </div>
+                    </div>
+
+                    <ul className="ml-16 space-y-2">
+                      {step.details.map((detail, i) => (
+                        <li key={i} className="flex items-start gap-2.5 text-sm text-foreground/80">
+                          <CheckCircle className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                          {detail}
+                        </li>
+                      ))}
+                    </ul>
+
+                    {step.callout && (
+                      <div
+                        className={`ml-16 mt-4 p-3 rounded-lg border text-sm ${
+                          step.callout.type === "warning"
+                            ? "bg-destructive/5 border-destructive/20 text-destructive"
+                            : "bg-primary/5 border-primary/20 text-primary"
+                        }`}
+                      >
+                        <div className="flex items-start gap-2">
+                          <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                          {step.callout.text}
+                        </div>
+                      </div>
+                    )}
+
+                    {step.link && (
+                      <a
+                        href={step.link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="ml-16 mt-3 inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        {step.link.label}
+                      </a>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
-          </div>
-        </section>
+          </section>
 
-        {/* Step-by-step */}
-        <section>
-          <h2 className="text-2xl font-bold text-foreground mb-6">Detailed Process Steps</h2>
-          <div className="space-y-6">
-            {steps.map((step) => (
-              <div key={step.number} className="rounded-xl border border-border bg-card overflow-hidden">
-                <div className="p-6">
-                  <div className="flex items-start gap-4 mb-4">
-                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                      <step.icon className="w-6 h-6 text-primary" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 flex-wrap">
-                        <h3 className="text-lg font-bold text-foreground">
-                          Step {step.number}: {step.title}
-                        </h3>
-                        <div className="flex gap-1.5">
-                          {step.systems.map((sys) => (
-                            <span
-                              key={sys}
-                              className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-accent text-accent-foreground"
-                            >
-                              {sys}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                      <p className="text-foreground/70 mt-2 leading-relaxed">{step.description}</p>
-                    </div>
+          {/* Benefits Summary */}
+          <section>
+            <h2 className="text-2xl font-bold text-foreground mb-6">Key Benefits</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {benefits.map((b) => (
+                <div key={b.title} className="rounded-xl border border-border bg-card p-6 flex items-start gap-4">
+                  <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                    <b.icon className="w-5 h-5 text-primary" />
                   </div>
-
-                  <ul className="ml-16 space-y-2">
-                    {step.details.map((detail, i) => (
-                      <li key={i} className="flex items-start gap-2.5 text-sm text-foreground/80">
-                        <CheckCircle className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-                        {detail}
-                      </li>
-                    ))}
-                  </ul>
-
-                  {step.callout && (
-                    <div
-                      className={`ml-16 mt-4 p-3 rounded-lg border text-sm ${
-                        step.callout.type === "warning"
-                          ? "bg-destructive/5 border-destructive/20 text-destructive"
-                          : "bg-primary/5 border-primary/20 text-primary"
-                      }`}
-                    >
-                      <div className="flex items-start gap-2">
-                        <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-                        {step.callout.text}
-                      </div>
-                    </div>
-                  )}
-
-                  {step.link && (
-                    <a
-                      href={step.link.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="ml-16 mt-3 inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                      {step.link.label}
-                    </a>
-                  )}
+                  <div>
+                    <h3 className="font-bold text-foreground mb-1">{b.title}</h3>
+                    <p className="text-sm text-foreground/70 leading-relaxed">{b.desc}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Benefits Summary */}
-        <section>
-          <h2 className="text-2xl font-bold text-foreground mb-6">Key Benefits</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {benefits.map((b) => (
-              <div key={b.title} className="rounded-xl border border-border bg-card p-6 flex items-start gap-4">
-                <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                  <b.icon className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-foreground mb-1">{b.title}</h3>
-                  <p className="text-sm text-foreground/70 leading-relaxed">{b.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Timeline Comparison */}
-        <section>
-          <h2 className="text-2xl font-bold text-foreground mb-6">Timeline Comparison</h2>
-          <div className="rounded-xl border border-border bg-card p-6 space-y-6">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-semibold text-foreground">Manual Process</span>
-                <span className="text-sm font-bold text-destructive">15–20+ days</span>
-              </div>
-              <div className="h-3 rounded-full bg-muted overflow-hidden">
-                <div className="h-full rounded-full bg-destructive/60" style={{ width: "100%" }} />
-              </div>
-              <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
-                <span>LOA Sent</span>
-                <span>Provider Processing (10-15d)</span>
-                <span>Data Available (+4-5d)</span>
-              </div>
+              ))}
             </div>
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-semibold text-foreground">With ORIGO + ProviderHub</span>
-                <span className="text-sm font-bold text-primary">3–5 days</span>
-              </div>
-              <div className="h-3 rounded-full bg-muted overflow-hidden">
-                <div className="h-full rounded-full bg-primary/60" style={{ width: "25%" }} />
-              </div>
-              <div className="flex text-[10px] text-muted-foreground mt-1">
-                <span>ORIGO Submission → Data Received & Extracted</span>
-              </div>
-            </div>
-          </div>
-        </section>
+          </section>
 
-        {/* Footer note */}
-        <section className="pb-10">
-          <div className="rounded-xl border border-border bg-muted/50 p-6 text-center">
-            <p className="text-sm text-muted-foreground">
-              This document is maintained by the Operations & Technology team. For questions or updates, please contact
-              the project lead.
-            </p>
-            <p className="text-xs text-muted-foreground mt-2">Last updated: March 2026</p>
-          </div>
-        </section>
-      </main>
+          {/* Footer note */}
+          <section className="pb-10">
+            <div className="rounded-xl border border-border bg-muted/50 p-6 text-center">
+              <p className="text-sm text-muted-foreground">
+                This document is maintained by the Operations & Technology team. For questions or updates, please contact
+                the project lead.
+              </p>
+              <p className="text-xs text-muted-foreground mt-2">Last updated: March 2026</p>
+            </div>
+          </section>
+        </main>
+      </div>
     </div>
   );
 }
