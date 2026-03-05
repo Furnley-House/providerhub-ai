@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
-import lionIcon from "@/assets/lion-icon.png";
+import logoDark from "@/assets/logo-dark.png";
 import {
   ArrowLeft,
   FileText,
@@ -233,7 +233,7 @@ export default function LOAWorkflow() {
 
       // Load logo for header
       const logoImg = new Image();
-      logoImg.src = lionIcon;
+      logoImg.src = logoDark;
       await new Promise((resolve) => { logoImg.onload = resolve; logoImg.onerror = resolve; });
 
       const logoH = 8; // mm
