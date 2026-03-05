@@ -242,9 +242,6 @@ export default function LOAWorkflow() {
 
       const addLogoHeader = (doc: jsPDF) => {
         doc.addImage(logoImg, "PNG", 10, 3, logoW, logoH);
-        doc.setFontSize(7);
-        doc.setTextColor(120, 120, 120);
-        doc.text("Furnley House", 10 + logoW + 3, 8);
         doc.setDrawColor(220, 220, 220);
         doc.line(10, headerH - 1, 200, headerH - 1);
       };
@@ -369,7 +366,8 @@ export default function LOAWorkflow() {
               {steps.map((step) => (
                 <div
                   key={step.number}
-                  className={`rounded-xl border border-border bg-card overflow-hidden${step.number === 3 ? " break-before-page" : ""}`}
+                  className={`rounded-xl border border-border bg-card overflow-hidden${step.number === 3 ? " break-before-page mt-0" : ""}`}
+                  style={step.number === 3 ? { pageBreakBefore: "always" } : undefined}
                 >
                   <div className="p-6">
                     <div className="flex items-start gap-4 mb-4">
