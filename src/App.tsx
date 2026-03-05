@@ -32,6 +32,7 @@ const App = () => (
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/presentation" element={<Presentation />} />
+            <Route path="/loa-workflow" element={<LOAWorkflow />} />
             <Route element={<AppLayout />}>
               <Route path="/" element={<Dashboard />} />
               <Route path="/cases" element={<Cases />} />
