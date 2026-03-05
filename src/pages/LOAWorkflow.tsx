@@ -366,8 +366,8 @@ export default function LOAWorkflow() {
               {steps.map((step) => (
                 <div
                   key={step.number}
-                  className={`rounded-xl border border-border bg-card overflow-hidden${step.number === 3 ? " break-before-page mt-0" : ""}`}
-                  style={step.number === 3 ? { pageBreakBefore: "always" } : undefined}
+                  className={`rounded-xl border border-border bg-card overflow-hidden${(step.number === 3 || step.number === 7) ? " break-before-page" : ""}`}
+                  style={(step.number === 3 || step.number === 7) ? { pageBreakBefore: "always" } : undefined}
                 >
                   <div className="p-6">
                     <div className="flex items-start gap-4 mb-4">
