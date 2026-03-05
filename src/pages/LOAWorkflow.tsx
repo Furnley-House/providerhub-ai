@@ -455,16 +455,6 @@ export default function LOAWorkflow() {
             </div>
           </section>
 
-          {/* Footer note */}
-          <section className="pb-10">
-            <div className="rounded-xl border border-border bg-muted/50 p-6 text-center">
-              <p className="text-sm text-muted-foreground">
-                This document is maintained by the Operations & Technology team. For questions or updates, please contact
-                the project lead.
-              </p>
-              <p className="text-xs text-muted-foreground mt-2">Last updated: March 2026</p>
-            </div>
-          </section>
         </main>
       </div>
     </div>
