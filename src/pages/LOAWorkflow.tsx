@@ -313,7 +313,7 @@ export default function LOAWorkflow() {
           <h2 className="text-2xl font-bold text-foreground mb-6">Detailed Process Steps</h2>
           <div className="space-y-6">
             {steps.map((step) => (
-              <div key={step.number} className={`rounded-xl border border-border bg-card overflow-hidden${step.number === 3 || step.number === 8 ? " break-before-page" : ""}`}>
+              <div key={step.number} className={`rounded-xl border border-border bg-card overflow-hidden${step.number === 3 ? " break-before-page" : ""}`}>
                 <div className="p-6">
                   <div className="flex items-start gap-4 mb-4">
                     <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
