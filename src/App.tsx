@@ -17,6 +17,7 @@ import Automations from "./pages/Automations";
 import CallAssist from "./pages/CallAssist";
 import FounderView from "./pages/FounderView";
 import Presentation from "./pages/Presentation";
+import LOAWorkflow from "./pages/LOAWorkflow";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,6 +32,7 @@ const App = () => (
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/presentation" element={<Presentation />} />
+            <Route path="/loa-workflow" element={<LOAWorkflow />} />
             <Route element={<AppLayout />}>
               <Route path="/" element={<Dashboard />} />
               <Route path="/cases" element={<Cases />} />

@@ -214,7 +214,62 @@ const slides: React.FC[] = [
     </div>
   ),
 
-  // 7 — Next Steps
+  // 7 — LOA Workflow Summary (NEW)
+  () => (
+    <div className="flex flex-col h-full bg-white px-20 py-16">
+      <h2 className="text-4xl font-bold text-[hsl(197,71%,20%)] mb-2">LOA & Data Collection Workflow</h2>
+      <p className="text-lg text-gray-500 mb-8">End-to-end flow: client signing → provider data → CRM sync</p>
+      <div className="flex gap-2 mb-8 items-center">
+        {[
+          { n: "1", t: "LOA Created", sub: "CRM + Zoho Sign" },
+          { n: "2", t: "Client Signs", sub: "E-signature" },
+          { n: "3", t: "Sent to Provider", sub: "Email / ORIGO" },
+          { n: "4", t: "Data Ingested", sub: "PDF / Email / ORIGO" },
+          { n: "5", t: "AI Extraction", sub: "Auto-fill checklist" },
+          { n: "6", t: "Ops Verify", sub: "Review & approve" },
+          { n: "7", t: "Resolve Gaps", sub: "AI-assisted calls" },
+          { n: "8", t: "CRM Sync", sub: "Final data pushed" },
+        ].map((s, i, arr) => (
+          <div key={i} className="flex items-center gap-2">
+            <div className="flex flex-col items-center w-[100px]">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold" style={{ backgroundColor: i < 3 ? "hsl(197,71%,20%)" : i < 6 ? "hsl(173,58%,39%)" : "hsl(152,60%,40%)" }}>{s.n}</div>
+              <p className="text-[11px] font-bold text-gray-900 text-center mt-1.5 leading-tight">{s.t}</p>
+              <p className="text-[9px] text-gray-400 text-center">{s.sub}</p>
+            </div>
+            {i < arr.length - 1 && <div className="w-4 h-px bg-gray-300" />}
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-3 gap-5 flex-1 content-start">
+        <div className="rounded-xl border-2 border-gray-100 p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-8 h-8 rounded-lg bg-[hsl(197,71%,20%)]/10 flex items-center justify-center"><Clock className="w-4 h-4 text-[hsl(197,71%,20%)]" /></div>
+            <h3 className="font-bold text-gray-900">Manual: 15–20 days</h3>
+          </div>
+          <p className="text-sm text-gray-500">Provider processing + data availability delays. Multiple follow-up calls required.</p>
+        </div>
+        <div className="rounded-xl border-2 border-[hsl(173,58%,39%)]/30 bg-[hsl(173,58%,39%)]/5 p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-8 h-8 rounded-lg bg-[hsl(173,58%,39%)]/10 flex items-center justify-center"><Zap className="w-4 h-4 text-[hsl(173,58%,39%)]" /></div>
+            <h3 className="font-bold text-gray-900">With ORIGO: 3–5 days</h3>
+          </div>
+          <p className="text-sm text-gray-500">Digital LOA + automated tracking. Not all providers supported.</p>
+        </div>
+        <div className="rounded-xl border-2 border-gray-100 p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-8 h-8 rounded-lg bg-[hsl(152,60%,40%)]/10 flex items-center justify-center"><Cpu className="w-4 h-4 text-[hsl(152,60%,40%)]" /></div>
+            <h3 className="font-bold text-gray-900">AI + Call Assist</h3>
+          </div>
+          <p className="text-sm text-gray-500">Auto-extract from PDFs & transcripts. AI scripts cut repeat calls by 60%.</p>
+        </div>
+      </div>
+      <div className="mt-auto pt-4 p-4 rounded-xl bg-[hsl(197,71%,20%)]/5 border border-[hsl(197,71%,20%)]/10">
+        <p className="text-sm text-gray-600 text-center"><span className="font-bold text-[hsl(197,71%,20%)]">Full workflow document available</span> — detailed breakdown of each step, systems involved, and integration points.</p>
+      </div>
+    </div>
+  ),
+
+  // 8 — Next Steps
   () => (
     <div className="flex flex-col items-center justify-center h-full bg-gradient-to-br from-[hsl(197,71%,20%)] to-[hsl(197,71%,10%)] text-white px-20">
       <h2 className="text-5xl font-bold mb-4">Next Steps</h2>
