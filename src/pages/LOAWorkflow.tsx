@@ -368,6 +368,7 @@ export default function LOAWorkflow() {
                   key={step.number}
                   className={`rounded-xl border border-border bg-card overflow-hidden${step.number === 3 ? " break-before-page mt-0" : ""}`}
                   style={step.number === 3 ? { pageBreakBefore: "always" } : undefined}
+                >
                   <div className="p-6">
                     <div className="flex items-start gap-4 mb-4">
                       <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
