@@ -1,7 +1,10 @@
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 import {
   ArrowLeft, FileText, Send, Clock, Phone, Cpu, CheckCircle, AlertTriangle,
-  PhoneCall, BrainCircuit, RefreshCw, ExternalLink, Mail, Shield, Zap, Users
+  PhoneCall, BrainCircuit, RefreshCw, ExternalLink, Mail, Shield, Zap, Users, Download, Loader2
 } from "lucide-react";
 
 const steps = [
