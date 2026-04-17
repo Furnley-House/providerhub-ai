@@ -220,11 +220,11 @@ const CaseDetail = () => {
   );
 };
 
-function Field({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+function HeaderField({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
-    <div className="flex justify-between gap-2">
-      <dt className="text-muted-foreground shrink-0">{label}</dt>
-      <dd className={`text-foreground text-right truncate ${mono ? "font-mono" : ""}`}>{value}</dd>
+    <div className="flex flex-col gap-0.5 min-w-0">
+      <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{label}</span>
+      <span className={`text-foreground truncate ${mono ? "font-mono text-[11px]" : "text-xs"}`}>{value}</span>
     </div>
   );
 }
