@@ -2,30 +2,22 @@ import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   Briefcase,
-  Inbox,
-  ClipboardCheck,
-  AlertCircle,
   Building2,
-  Zap,
-  Phone,
-  TrendingUp,
+  ShieldCheck,
 } from "lucide-react";
-import lionIcon from "@/assets/lion-icon.png";
-
-const navItems = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Cases", url: "/cases", icon: Briefcase },
-  { title: "Document Inbox", url: "/documents", icon: Inbox },
-  { title: "Ceding Checklist", url: "/ceding", icon: ClipboardCheck },
-  { title: "Missing Data", url: "/missing-data", icon: AlertCircle },
-  { title: "Provider Directory", url: "/providers", icon: Building2 },
-  { title: "Automations", url: "/automations", icon: Zap },
-  { title: "Call Assist", url: "/call-assist", icon: Phone },
-  { title: "Founder View", url: "/founder", icon: TrendingUp },
-];
+import { useRole } from "@/hooks/useRole";
+import logo from "@/assets/logo-white.png";
 
 export function AppSidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
   const location = useLocation();
+  const { isAdmin } = useRole();
+
+  const navItems = [
+    { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, show: true },
+    { title: "Cases", url: "/cases", icon: Briefcase, show: true },
+    { title: "Provider Directory", url: "/providers", icon: Building2, show: true },
+    { title: "Admin Panel", url: "/admin", icon: ShieldCheck, show: isAdmin },
+  ].filter((i) => i.show);
 
   return (
     <aside
@@ -33,26 +25,27 @@ export function AppSidebar({ collapsed, onToggle }: { collapsed: boolean; onTogg
         collapsed ? "w-16" : "w-60"
       }`}
     >
-      {/* Logo */}
-      <div className="flex h-16 items-center gap-3 border-b border-sidebar-border px-3">
-        <img src={lionIcon} alt="Furnley House" className="h-9 w-9 shrink-0 rounded-lg object-contain" />
+      <div className="flex h-16 items-center gap-3 border-b border-sidebar-border px-4 shrink-0">
+        <div className="flex h-9 w-9 items-center justify-center rounded-md bg-sidebar-accent shrink-0">
+          <img src={logo} alt="FH" className="h-7 w-7 object-contain" />
+        </div>
         {!collapsed && (
-          <div className="flex flex-col leading-tight">
-            <span className="text-sm font-bold tracking-tight text-sidebar-primary-foreground theme-heading">
+          <div className="flex flex-col leading-tight min-w-0">
+            <span className="text-sm font-bold tracking-tight text-sidebar-accent-foreground theme-heading truncate">
               FURNLEY HOUSE
             </span>
-            <span className="text-[10px] font-medium tracking-widest text-sidebar-primary opacity-80">
-              FINANCIAL PLANNING
+            <span className="text-[9px] font-medium tracking-widest text-sidebar-primary truncate">
+              CEDING APPLICATION
             </span>
           </div>
         )}
       </div>
 
-      {/* Nav items */}
       <nav className="flex-1 overflow-y-auto py-4 scrollbar-thin">
         <ul className="space-y-1 px-2">
           {navItems.map((item) => {
-            const isActive = location.pathname === item.url || (item.url !== "/" && location.pathname.startsWith(item.url));
+            const isActive =
+              location.pathname === item.url || (item.url !== "/dashboard" && location.pathname.startsWith(item.url));
             return (
               <li key={item.url}>
                 <NavLink
@@ -72,7 +65,12 @@ export function AppSidebar({ collapsed, onToggle }: { collapsed: boolean; onTogg
         </ul>
       </nav>
 
-      {/* Collapse toggle */}
+      {!collapsed && (
+        <div className="px-4 py-3 border-t border-sidebar-border text-[10px] text-sidebar-foreground/60 leading-relaxed">
+          Data retained for 12 months per FH policy
+        </div>
+      )}
+
       <button
         onClick={onToggle}
         className="flex h-12 items-center justify-center border-t border-sidebar-border text-sidebar-foreground hover:text-sidebar-accent-foreground transition-colors"
