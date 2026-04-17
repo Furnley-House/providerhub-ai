@@ -88,6 +88,7 @@ export const CEDING_STAGES = [
   { num: 8, key: "assign", label: "Assign to Paraplanner" },
   { num: 9, key: "approval", label: "Approval" },
   { num: 10, key: "export", label: "Export & WorkDrive" },
+  { num: 11, key: "complete", label: "Ceding Complete" },
 ] as const;
 
 export function generateCaseRef(planType: string) {

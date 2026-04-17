@@ -17,6 +17,7 @@ import {
   StageAssign,
   StageApproval,
   StageExport,
+  StageComplete,
 } from "@/components/case/stages";
 
 const CaseDetail = () => {
@@ -64,21 +65,27 @@ const CaseDetail = () => {
   const rag = calculateRag(caseItem as any);
 
   const goToStage = (n: number) => {
-    if (n < 1 || n > 10) return;
+    if (n < 1 || n > 11) return;
     updateMutation.mutate({ updates: { current_stage: n, last_activity_at: new Date().toISOString() } });
   };
 
   const completeAndNext = () => {
     const newCompleted = Array.from(new Set([...stagesCompleted, currentStage])).sort((a, b) => a - b);
-    const next = Math.min(currentStage + 1, 10);
-    updateMutation.mutate({
-      updates: {
-        current_stage: next,
-        stages_completed: newCompleted,
-        last_activity_at: new Date().toISOString(),
-      },
+    const next = Math.min(currentStage + 1, 11);
+    const updates: any = {
+      current_stage: next,
+      stages_completed: newCompleted,
+      last_activity_at: new Date().toISOString(),
+    };
+    // Stamp completion when crossing into Stage 11
+    if (currentStage === 10 && next === 11) {
+      updates.status = "complete";
+      updates.ceding_complete_date = new Date().toISOString().slice(0, 10);
+    }
+    updateMutation.mutate({ updates });
+    toast.success(`Stage ${currentStage} complete`, {
+      description: next === 11 ? "Ceding complete!" : `Moved to step ${next}.`,
     });
-    toast.success(`Stage ${currentStage} complete`, { description: `Moved to step ${next}.` });
   };
 
   const StageComponent = [
@@ -92,6 +99,7 @@ const CaseDetail = () => {
     StageAssign,
     StageApproval,
     StageExport,
+    StageComplete,
   ][currentStage - 1];
 
   return (
@@ -229,17 +237,18 @@ const CaseDetail = () => {
               <ChevronLeft className="h-4 w-4" /> Previous step
             </Button>
             <p className="text-xs text-muted-foreground">
-              Step {currentStage} of 10 · {CEDING_STAGES[currentStage - 1].label}
+              Step {currentStage} of 11 · {CEDING_STAGES[currentStage - 1].label}
             </p>
-            {isCA && currentStage < 10 ? (
+            {isCA && currentStage < 11 ? (
               <Button onClick={completeAndNext} className="gap-2">
-                Mark complete & continue <ChevronRight className="h-4 w-4" />
+                {currentStage === 10 ? "Mark ceding complete" : "Mark complete & continue"}
+                <ChevronRight className="h-4 w-4" />
               </Button>
             ) : (
               <Button
                 variant="outline"
                 onClick={() => goToStage(currentStage + 1)}
-                disabled={currentStage >= 10}
+                disabled={currentStage >= 11}
                 className="gap-2"
               >
                 Next step <ChevronRight className="h-4 w-4" />

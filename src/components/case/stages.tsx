@@ -21,6 +21,7 @@ import { AuditTimeline } from "./AuditTimeline";
 import { AssignParaplannerDialog } from "./AssignParaplannerDialog";
 import { ApprovalWorkspace } from "./ApprovalWorkspace";
 import { ExportWorkspace } from "./ExportWorkspace";
+import { CompleteWorkspace } from "./CompleteWorkspace";
 import { useDocuments } from "@/hooks/useDocuments";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -52,7 +53,7 @@ function StagePanel({
           <Icon className="h-5 w-5" />
         </div>
         <div className="flex-1">
-          <p className="text-[10px] uppercase tracking-widest text-teal font-semibold">Step {num} of 10</p>
+          <p className="text-[10px] uppercase tracking-widest text-teal font-semibold">Step {num} of 11</p>
           <h2 className="text-lg font-bold theme-heading text-foreground">{title}</h2>
           <p className="text-sm text-muted-foreground mt-0.5">{description}</p>
         </div>
@@ -298,6 +299,19 @@ export function StageExport({ caseItem }: StageProps) {
       description="Generate the completed checklist as Excel (Summary + Checklist + Audit Trail tabs) and push to Zoho WorkDrive."
     >
       <ExportWorkspace caseItem={caseItem} />
+    </StagePanel>
+  );
+}
+
+export function StageComplete({ caseItem }: StageProps) {
+  return (
+    <StagePanel
+      num={11}
+      icon={CheckCircle2}
+      title="Ceding Complete"
+      description="All ten ceding steps are done — the case is ready for the adviser to take over for the Suitability Report."
+    >
+      <CompleteWorkspace caseItem={caseItem} />
     </StagePanel>
   );
 }
