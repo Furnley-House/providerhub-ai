@@ -16,6 +16,7 @@ import { ChecklistPanel } from "./ChecklistPanel";
 import { DocumentUploader } from "./DocumentUploader";
 import { DocumentList } from "./DocumentList";
 import { ExtractionWorkspace } from "./ExtractionWorkspace";
+import { CallWorkspace } from "./CallWorkspace";
 import { useDocuments } from "@/hooks/useDocuments";
 
 interface StageProps {
@@ -163,9 +164,16 @@ export function StageCallAssist({ caseItem }: StageProps) {
       num={5}
       icon={Phone}
       title="Call Assist with AI Script"
-      description="Generate a tailored provider-call script targeting the remaining missing fields."
-      comingSoon="Phase 4: provider lookup card + AI-generated call script + missing-fields summary"
-    />
+      description="AI generates a tailored script targeting your remaining missing fields. Start the call (RingCentral in production), capture the transcript, then merge the agent's answers straight into the checklist."
+    >
+      <CallWorkspace
+        caseId={caseItem.id}
+        planType={caseItem.plan_type}
+        clientName={caseItem.client_name}
+        providerName={caseItem.provider_name}
+        planNumber={caseItem.plan_number}
+      />
+    </StagePanel>
   );
 }
 
@@ -175,9 +183,16 @@ export function StageTranscript({ caseItem }: StageProps) {
       num={6}
       icon={FileAudio}
       title="Call Transcript with AI Assist"
-      description="Paste the Palindrome transcript. AI will match answers to the remaining checklist gaps."
-      comingSoon="Phase 4: paste-transcript flow with AI field matching and 'From call transcript' tagging"
-    />
+      description="Same workspace as Step 5 — paste the Palindrome transcript at any time and click Analyse. The merge engine preserves manual edits and approvals."
+    >
+      <CallWorkspace
+        caseId={caseItem.id}
+        planType={caseItem.plan_type}
+        clientName={caseItem.client_name}
+        providerName={caseItem.provider_name}
+        planNumber={caseItem.plan_number}
+      />
+    </StagePanel>
   );
 }
 
