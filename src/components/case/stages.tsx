@@ -18,7 +18,11 @@ import { DocumentList } from "./DocumentList";
 import { ExtractionWorkspace } from "./ExtractionWorkspace";
 import { CallWorkspace } from "./CallWorkspace";
 import { AuditTimeline } from "./AuditTimeline";
+import { AssignParaplannerDialog } from "./AssignParaplannerDialog";
 import { useDocuments } from "@/hooks/useDocuments";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { getParaplanner } from "@/lib/paraplanners";
 
 interface StageProps {
   caseItem: CaseRow;
