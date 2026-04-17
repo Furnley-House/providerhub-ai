@@ -397,6 +397,62 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          actor_name: string | null
+          actor_role: string | null
+          body: string | null
+          case_id: string | null
+          created_at: string
+          id: string
+          link: string | null
+          read: boolean
+          read_at: string | null
+          recipient_role: string | null
+          recipient_user_id: string
+          title: string
+          type: string
+        }
+        Insert: {
+          actor_name?: string | null
+          actor_role?: string | null
+          body?: string | null
+          case_id?: string | null
+          created_at?: string
+          id?: string
+          link?: string | null
+          read?: boolean
+          read_at?: string | null
+          recipient_role?: string | null
+          recipient_user_id: string
+          title: string
+          type: string
+        }
+        Update: {
+          actor_name?: string | null
+          actor_role?: string | null
+          body?: string | null
+          case_id?: string | null
+          created_at?: string
+          id?: string
+          link?: string | null
+          read?: boolean
+          read_at?: string | null
+          recipient_role?: string | null
+          recipient_user_id?: string
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
