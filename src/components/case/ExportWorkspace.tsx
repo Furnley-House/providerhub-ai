@@ -41,6 +41,38 @@ export function ExportWorkspace({ caseItem }: Props) {
   const [uploading, setUploading] = useState(false);
   const [lastExportAt, setLastExportAt] = useState<string | null>(null);
   const [workdriveLink, setWorkdriveLink] = useState<string | null>(null);
+  const [preparingSR, setPreparingSR] = useState(false);
+
+  const handlePrepareSR = async () => {
+    if (!caseItem.zoho_task_id) {
+      toast.error("No Zoho task linked", { description: "Add a Zoho task ID to this case first." });
+      return;
+    }
+    setPreparingSR(true);
+    try {
+      // Stub: in production this hits a Zoho CRM edge function that triggers the
+      // "SR Preparation" blueprint transition on the linked task.
+      await new Promise((r) => setTimeout(r, 800));
+      await supabase.from("field_audit").insert({
+        case_id: caseItem.id,
+        action: "sr_blueprint_triggered",
+        source: "export",
+        actor_name: userName,
+        actor_role: role,
+        notes: `Triggered SR Preparation blueprint on Zoho task ${caseItem.zoho_task_id}`,
+      });
+      const taskUrl = `https://crm.zoho.eu/crm/tab/Tasks/${caseItem.zoho_task_id}`;
+      toast.success("SR blueprint triggered", { description: "Opening Zoho task…" });
+      window.open(taskUrl, "_blank", "noopener,noreferrer");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to trigger blueprint", {
+        description: err instanceof Error ? err.message : "Unknown error",
+      });
+    } finally {
+      setPreparingSR(false);
+    }
+  };
 
   const stats = useMemo(() => {
     const total = template.length;
@@ -344,11 +376,36 @@ export function ExportWorkspace({ caseItem }: Props) {
         </div>
       </div>
 
-      <div className="rounded-md border border-dashed border-border bg-muted/20 p-3">
-        <p className="text-[11px] text-muted-foreground">
-          <span className="font-semibold text-foreground">Next:</span> the Suitability Report handoff (Phase 11) will
-          pick up this same workbook and pre-fill the SR template with the approved values.
-        </p>
+      <div className="rounded-md border border-teal/30 bg-teal/5 p-4">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-md bg-teal/15 text-teal shrink-0">
+            <Sparkles className="h-5 w-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] uppercase tracking-widest font-bold text-teal">
+              Hand off to adviser
+            </p>
+            <h4 className="text-sm font-bold text-foreground">Prepare for Suitability Report</h4>
+            <p className="text-xs text-muted-foreground mt-1">
+              Triggers the <span className="font-semibold text-foreground">SR Preparation</span> blueprint in Zoho
+              CRM and opens the linked task so the adviser can take over.
+              {!caseItem.zoho_task_id && (
+                <span className="block mt-1 text-warning font-medium">
+                  No Zoho task linked to this case yet.
+                </span>
+              )}
+            </p>
+          </div>
+          <Button
+            onClick={handlePrepareSR}
+            disabled={preparingSR || !caseItem.zoho_task_id}
+            className="gap-2 shrink-0"
+          >
+            {preparingSR ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+            {preparingSR ? "Triggering…" : "Prepare SR"}
+            {!preparingSR && <ExternalLink className="h-3.5 w-3.5" />}
+          </Button>
+        </div>
       </div>
     </div>
   );
