@@ -13,6 +13,10 @@ import {
   Sparkles,
 } from "lucide-react";
 import { ChecklistPanel } from "./ChecklistPanel";
+import { DocumentUploader } from "./DocumentUploader";
+import { DocumentList } from "./DocumentList";
+import { ExtractionWorkspace } from "./ExtractionWorkspace";
+import { useDocuments } from "@/hooks/useDocuments";
 
 interface StageProps {
   caseItem: CaseRow;
@@ -99,14 +103,31 @@ export function StageCaseDetails({ caseItem }: StageProps) {
 }
 
 export function StageDocumentUpload({ caseItem }: StageProps) {
+  const { documents, removeDocument } = useDocuments(caseItem.id);
   return (
     <StagePanel
       num={2}
       icon={Upload}
       title="Document Upload"
-      description="Upload the policy pack(s) received from the provider — PDF, Word, Excel or email exports."
-      comingSoon="Phase 3: multi-file drop zone with per-document extract & remove actions"
-    />
+      description="Upload the policy pack(s) received from the provider — PDFs, multi-file supported."
+    >
+      <div className="space-y-4">
+        <DocumentUploader caseId={caseItem.id} />
+        <div className="rounded-md border border-border bg-card p-3">
+          <h4 className="text-[11px] uppercase tracking-widest font-bold text-muted-foreground mb-2">
+            Uploaded documents ({documents.length})
+          </h4>
+          <DocumentList
+            documents={documents}
+            caseId={caseItem.id}
+            planType={caseItem.plan_type}
+            selectedId={null}
+            onSelect={() => {}}
+            onRemove={removeDocument}
+          />
+        </div>
+      </div>
+    </StagePanel>
   );
 }
 
@@ -116,9 +137,10 @@ export function StageAIExtraction({ caseItem }: StageProps) {
       num={3}
       icon={Cpu}
       title="Extract Using AI"
-      description="Claude reads each document and populates the checklist with values, confidence scores, and source page references."
-      comingSoon="Phase 3: full AI extraction with side-by-side PDF viewer and field-to-page jump"
-    />
+      description="Side-by-side viewer — Gemini reads each PDF, populates the checklist, and links every value to its source page."
+    >
+      <ExtractionWorkspace caseId={caseItem.id} planType={caseItem.plan_type} />
+    </StagePanel>
   );
 }
 
