@@ -21,6 +21,7 @@ import { AuditTimeline } from "./AuditTimeline";
 import { AssignParaplannerDialog } from "./AssignParaplannerDialog";
 import { ApprovalWorkspace } from "./ApprovalWorkspace";
 import { ExportWorkspace } from "./ExportWorkspace";
+import { CompleteWorkspace } from "./CompleteWorkspace";
 import { useDocuments } from "@/hooks/useDocuments";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
