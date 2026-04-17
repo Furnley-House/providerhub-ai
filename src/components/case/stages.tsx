@@ -19,6 +19,7 @@ import { ExtractionWorkspace } from "./ExtractionWorkspace";
 import { CallWorkspace } from "./CallWorkspace";
 import { AuditTimeline } from "./AuditTimeline";
 import { AssignParaplannerDialog } from "./AssignParaplannerDialog";
+import { ApprovalWorkspace } from "./ApprovalWorkspace";
 import { useDocuments } from "@/hooks/useDocuments";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -280,9 +281,10 @@ export function StageApproval({ caseItem }: StageProps) {
       num={9}
       icon={CheckCircle2}
       title="Paraplanner / Adviser Approval"
-      description="Per-field approve / request review / comment workspace for the UK reviewer."
-      comingSoon="Phase 6: full approval workspace with bulk-approve and request-review-with-comment"
-    />
+      description="Per-field approve, request review with comment, then sign off the whole case once every field is approved."
+    >
+      <ApprovalWorkspace caseItem={caseItem} />
+    </StagePanel>
   );
 }
 
