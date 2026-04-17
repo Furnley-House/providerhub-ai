@@ -245,6 +245,31 @@ export function ChecklistField({ def, state, onChange, onJumpToSource }: Props) 
                 <RotateCcw className="h-2.5 w-2.5" /> Review requested
               </span>
             )}
+
+            {onJumpToSource && state.evidenceRef && (
+              <TooltipProvider delayDuration={200}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="h-5 px-1.5 text-[10px] gap-1 text-info hover:text-info"
+                      onClick={onJumpToSource}
+                    >
+                      <FileSearch className="h-3 w-3" />
+                      Source
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs">Jump to source in PDF</p>
+                    {state.evidenceRef && (
+                      <p className="text-[10px] text-muted-foreground">{state.evidenceRef}</p>
+                    )}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
           </div>
 
           {def.hint && <p className="text-[10px] text-muted-foreground italic mt-0.5">{def.hint}</p>}
