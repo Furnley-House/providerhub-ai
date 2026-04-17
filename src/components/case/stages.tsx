@@ -17,6 +17,7 @@ import { DocumentUploader } from "./DocumentUploader";
 import { DocumentList } from "./DocumentList";
 import { ExtractionWorkspace } from "./ExtractionWorkspace";
 import { CallWorkspace } from "./CallWorkspace";
+import { AuditTimeline } from "./AuditTimeline";
 import { useDocuments } from "@/hooks/useDocuments";
 
 interface StageProps {
@@ -202,9 +203,10 @@ export function StageAuditTrail({ caseItem }: StageProps) {
       num={7}
       icon={History}
       title="Audit Trail"
-      description="Every action on this case — uploads, extractions, edits, approvals, comments — captured immutably."
-      comingSoon="Phase 5: filterable timeline with user, role, action type, old/new values"
-    />
+      description="Every field change on this case — AI extractions, manual edits, call merges, approvals — captured immutably."
+    >
+      <AuditTimeline caseId={caseItem.id} />
+    </StagePanel>
   );
 }
 

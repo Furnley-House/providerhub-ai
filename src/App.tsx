@@ -15,6 +15,7 @@ import ProviderDirectory from "./pages/ProviderDirectory";
 import Admin from "./pages/Admin";
 import Presentation from "./pages/Presentation";
 import LOAWorkflow from "./pages/LOAWorkflow";
+import AuditTrail from "./pages/AuditTrail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -42,6 +43,14 @@ const App = () => (
                 <Route path="/cases" element={<Cases />} />
                 <Route path="/cases/:id" element={<CaseDetail />} />
                 <Route path="/providers" element={<ProviderDirectory />} />
+                <Route
+                  path="/audit"
+                  element={
+                    <RoleGuard allow={["admin", "paraplanner", "adviser"]}>
+                      <AuditTrail />
+                    </RoleGuard>
+                  }
+                />
                 <Route
                   path="/admin"
                   element={
