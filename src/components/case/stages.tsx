@@ -1,5 +1,4 @@
 import type { CaseRow } from "@/lib/caseHelpers";
-import { CEDING_STAGES } from "@/lib/caseHelpers";
 import {
   FileText,
   Upload,
@@ -13,6 +12,7 @@ import {
   Download,
   Sparkles,
 } from "lucide-react";
+import { ChecklistPanel } from "./ChecklistPanel";
 
 interface StageProps {
   caseItem: CaseRow;
@@ -129,8 +129,9 @@ export function StageMissingData({ caseItem }: StageProps) {
       icon={ListChecks}
       title="Fill the Gaps — Checklist"
       description={`Plan-type-specific checklist for ${caseItem.plan_type}. Edit any field, every change is audit-logged.`}
-      comingSoon="Phase 2: full checklists for all 6 plan types with per-field confidence, edit, approve & comment actions"
-    />
+    >
+      <ChecklistPanel planType={caseItem.plan_type} caseId={caseItem.id} />
+    </StagePanel>
   );
 }
 
