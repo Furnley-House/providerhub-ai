@@ -120,81 +120,84 @@ const CaseDetail = () => {
         <ArrowLeft className="h-4 w-4" /> Back to cases
       </Link>
 
-      {/* Header — consolidated case details */}
-      <div className="mb-6 rounded-lg border border-border bg-card p-5">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-3 mb-2 flex-wrap">
-              <span className={`inline-block h-3 w-3 rounded-full ${RAG_STYLES[rag].dot}`} />
-              <h1 className="text-2xl font-bold theme-heading text-foreground truncate">{caseItem.client_name}</h1>
-              <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold ${STATUS_STYLES[caseItem.status] ?? ""}`}>
-                {STATUS_LABELS[caseItem.status] ?? caseItem.status}
-              </span>
-              <span className="font-mono text-xs px-2 py-0.5 rounded bg-muted text-muted-foreground">
-                {caseItem.case_ref}
-              </span>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-2 text-xs mt-3">
-              <HeaderField label="Provider" value={caseItem.provider_name} />
-              <HeaderField label="Plan type" value={caseItem.plan_type} />
-              <HeaderField label="Policy ref" value={caseItem.plan_number} mono />
-              <HeaderField label="Owner" value={caseItem.owner_name ?? "—"} />
-              <HeaderField label="Zoho task" value={(caseItem as any).zoho_task_id ?? "—"} mono />
-              <HeaderField
-                label="Created"
-                value={new Date(caseItem.created_at).toLocaleDateString("en-GB", {
-                  day: "2-digit",
-                  month: "short",
-                  year: "numeric",
-                })}
-              />
-              <HeaderField label="Stage" value={`${currentStage} of 11`} />
-              <HeaderField label="RAG" value={RAG_STYLES[rag].label} />
+      {/* Sticky: header + horizontal stepper */}
+      <div className="sticky top-16 z-20 -mx-6 px-6 pt-1 pb-3 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border mb-6">
+        {/* Header — consolidated case details */}
+        <div className="rounded-lg border border-border bg-card p-4 mb-3">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-3 mb-2 flex-wrap">
+                <span className={`inline-block h-3 w-3 rounded-full ${RAG_STYLES[rag].dot}`} />
+                <h1 className="text-xl font-bold theme-heading text-foreground truncate">{caseItem.client_name}</h1>
+                <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold ${STATUS_STYLES[caseItem.status] ?? ""}`}>
+                  {STATUS_LABELS[caseItem.status] ?? caseItem.status}
+                </span>
+                <span className="font-mono text-xs px-2 py-0.5 rounded bg-muted text-muted-foreground">
+                  {caseItem.case_ref}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-1.5 text-xs mt-2">
+                <HeaderField label="Provider" value={caseItem.provider_name} />
+                <HeaderField label="Plan type" value={caseItem.plan_type} />
+                <HeaderField label="Policy ref" value={caseItem.plan_number} mono />
+                <HeaderField label="Owner" value={caseItem.owner_name ?? "—"} />
+                <HeaderField label="Zoho task" value={(caseItem as any).zoho_task_id ?? "—"} mono />
+                <HeaderField
+                  label="Created"
+                  value={new Date(caseItem.created_at).toLocaleDateString("en-GB", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                  })}
+                />
+                <HeaderField label="Stage" value={`${currentStage} of 10`} />
+                <HeaderField label="RAG" value={RAG_STYLES[rag].label} />
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Horizontal stepper */}
-      <div className="mb-6 rounded-lg border border-border bg-card p-4 overflow-x-auto">
-        <div className="flex items-start gap-1 min-w-[900px]">
-          {CEDING_STAGES.map((s, i) => {
-            const isDone = stagesCompleted.includes(s.num);
-            const isCurrent = currentStage === s.num;
-            return (
-              <button
-                key={s.num}
-                onClick={() => goToStage(s.num)}
-                className={`flex-1 group text-center px-2 py-2 rounded-md transition-colors ${
-                  isCurrent ? "bg-teal/10" : "hover:bg-muted/50"
-                }`}
-              >
-                <div className="flex items-center gap-1">
-                  <div
-                    className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-bold shrink-0 ${
-                      isDone
-                        ? "bg-success text-success-foreground"
-                        : isCurrent
-                        ? "bg-teal text-teal-foreground ring-2 ring-teal/30"
-                        : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {isDone ? <CheckCircle2 className="h-4 w-4" /> : s.num}
-                  </div>
-                  {i < CEDING_STAGES.length - 1 && (
-                    <div className={`flex-1 h-0.5 ${isDone ? "bg-success" : "bg-border"}`} />
-                  )}
-                </div>
-                <p
-                  className={`mt-2 text-[10px] font-semibold leading-tight ${
-                    isCurrent ? "text-foreground" : "text-muted-foreground"
+        {/* Horizontal stepper */}
+        <div className="rounded-lg border border-border bg-card p-3 overflow-x-auto">
+          <div className="flex items-start gap-1 min-w-[820px]">
+            {CEDING_STAGES.map((s, i) => {
+              const isDone = stagesCompleted.includes(s.num);
+              const isCurrent = currentStage === s.num;
+              return (
+                <button
+                  key={s.num}
+                  onClick={() => goToStage(s.num)}
+                  className={`flex-1 group text-center px-2 py-1.5 rounded-md transition-colors ${
+                    isCurrent ? "bg-teal/10" : "hover:bg-muted/50"
                   }`}
                 >
-                  {s.label}
-                </p>
-              </button>
-            );
-          })}
+                  <div className="flex items-center gap-1">
+                    <div
+                      className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold shrink-0 ${
+                        isDone
+                          ? "bg-success text-success-foreground"
+                          : isCurrent
+                          ? "bg-teal text-teal-foreground ring-2 ring-teal/30"
+                          : "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      {isDone ? <CheckCircle2 className="h-3.5 w-3.5" /> : s.num}
+                    </div>
+                    {i < CEDING_STAGES.length - 1 && (
+                      <div className={`flex-1 h-0.5 ${isDone ? "bg-success" : "bg-border"}`} />
+                    )}
+                  </div>
+                  <p
+                    className={`mt-1.5 text-[10px] font-semibold leading-tight ${
+                      isCurrent ? "text-foreground" : "text-muted-foreground"
+                    }`}
+                  >
+                    {s.label}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
