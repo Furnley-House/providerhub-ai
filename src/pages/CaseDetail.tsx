@@ -1,6 +1,7 @@
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
+import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, CheckCircle2, Circle, Loader2, ChevronRight, ChevronLeft } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Loader2, ChevronRight, ChevronLeft } from "lucide-react";
 import { getCaseById, updateCase } from "@/services/api";
 import { CEDING_STAGES, STATUS_LABELS, STATUS_STYLES, RAG_STYLES, calculateRag } from "@/lib/caseHelpers";
 import { useRole } from "@/hooks/useRole";
