@@ -217,18 +217,18 @@ const CaseDetail = () => {
               <ChevronLeft className="h-4 w-4" /> Previous step
             </Button>
             <p className="text-xs text-muted-foreground">
-              Step {currentStage} of 11 · {CEDING_STAGES[currentStage - 1].label}
+              Step {currentStage} of 10 · {CEDING_STAGES[currentStage - 1].label}
             </p>
-            {isCA && currentStage < 11 ? (
+            {isCA && currentStage < 10 ? (
               <Button onClick={completeAndNext} className="gap-2">
-                {currentStage === 10 ? "Mark ceding complete" : "Mark complete & continue"}
+                {currentStage === 9 ? "Mark ceding complete" : "Mark complete & continue"}
                 <ChevronRight className="h-4 w-4" />
               </Button>
             ) : (
               <Button
                 variant="outline"
                 onClick={() => goToStage(currentStage + 1)}
-                disabled={currentStage >= 11}
+                disabled={currentStage >= 10}
                 className="gap-2"
               >
                 Next step <ChevronRight className="h-4 w-4" />
