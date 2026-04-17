@@ -1,6 +1,7 @@
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
+import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, CheckCircle2, Circle, Loader2, ChevronRight, ChevronLeft } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Loader2, ChevronRight, ChevronLeft } from "lucide-react";
 import { getCaseById, updateCase } from "@/services/api";
 import { CEDING_STAGES, STATUS_LABELS, STATUS_STYLES, RAG_STYLES, calculateRag } from "@/lib/caseHelpers";
 import { useRole } from "@/hooks/useRole";
@@ -23,6 +24,7 @@ import {
 const CaseDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const qc = useQueryClient();
   const { isCA } = useRole();
 
@@ -40,6 +42,18 @@ const CaseDetail = () => {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  // Handle stage navigation from sidebar sub-nav
+  useEffect(() => {
+    const target = (location.state as any)?.goToStage;
+    if (target && typeof target === "number") {
+      updateMutation.mutate({
+        updates: { current_stage: target, last_activity_at: new Date().toISOString() },
+      });
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state]);
 
   if (isLoading) {
     return (
@@ -143,44 +157,50 @@ const CaseDetail = () => {
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[240px,1fr]">
-        {/* Sidebar — Progress sub-navigation under Cases */}
-        <aside>
-          <div className="theme-card border border-border bg-card sticky top-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Progress</h3>
-              <span className="text-[10px] text-muted-foreground">
-                {stagesCompleted.length}/11
-              </span>
-            </div>
-            <ol className="space-y-0.5">
-              {CEDING_STAGES.map((s) => {
-                const isDone = stagesCompleted.includes(s.num);
-                const isCurrent = currentStage === s.num;
-                return (
-                  <li key={s.num}>
-                    <button
-                      onClick={() => goToStage(s.num)}
-                      className={`flex w-full items-center gap-2 text-left text-xs px-2 py-1.5 rounded-md transition-colors ${
-                        isCurrent ? "bg-teal/10 text-foreground font-semibold" : "hover:bg-muted/50 text-muted-foreground"
-                      }`}
-                    >
-                      {isDone ? (
-                        <CheckCircle2 className="h-3.5 w-3.5 text-success shrink-0" />
-                      ) : (
-                        <Circle className="h-3.5 w-3.5 text-border shrink-0" />
-                      )}
-                      <span className="flex-1 truncate">
-                        {s.num}. {s.label}
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ol>
-          </div>
-        </aside>
+      {/* Horizontal stepper */}
+      <div className="mb-6 rounded-lg border border-border bg-card p-4 overflow-x-auto">
+        <div className="flex items-start gap-1 min-w-[900px]">
+          {CEDING_STAGES.map((s, i) => {
+            const isDone = stagesCompleted.includes(s.num);
+            const isCurrent = currentStage === s.num;
+            return (
+              <button
+                key={s.num}
+                onClick={() => goToStage(s.num)}
+                className={`flex-1 group text-center px-2 py-2 rounded-md transition-colors ${
+                  isCurrent ? "bg-teal/10" : "hover:bg-muted/50"
+                }`}
+              >
+                <div className="flex items-center gap-1">
+                  <div
+                    className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-bold shrink-0 ${
+                      isDone
+                        ? "bg-success text-success-foreground"
+                        : isCurrent
+                        ? "bg-teal text-teal-foreground ring-2 ring-teal/30"
+                        : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {isDone ? <CheckCircle2 className="h-4 w-4" /> : s.num}
+                  </div>
+                  {i < CEDING_STAGES.length - 1 && (
+                    <div className={`flex-1 h-0.5 ${isDone ? "bg-success" : "bg-border"}`} />
+                  )}
+                </div>
+                <p
+                  className={`mt-2 text-[10px] font-semibold leading-tight ${
+                    isCurrent ? "text-foreground" : "text-muted-foreground"
+                  }`}
+                >
+                  {s.label}
+                </p>
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
+      <div>
         {/* Stage content */}
         <main className="space-y-4">
           <StageComponent caseItem={caseItem as any} />

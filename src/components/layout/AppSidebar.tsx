@@ -1,4 +1,4 @@
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate, useParams, matchPath } from "react-router-dom";
 import {
   LayoutDashboard,
   Briefcase,
@@ -6,13 +6,29 @@ import {
   ShieldCheck,
   History,
   Inbox,
+  CheckCircle2,
+  Circle,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { useRole } from "@/hooks/useRole";
+import { getCaseById } from "@/services/api";
+import { CEDING_STAGES } from "@/lib/caseHelpers";
 import logo from "@/assets/logo-white.png";
 
 export function AppSidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
   const location = useLocation();
+  const navigate = useNavigate();
   const { isAdmin, isAdviser, isParaplanner } = useRole();
+
+  // Detect active case from URL
+  const caseMatch = matchPath("/cases/:id", location.pathname);
+  const activeCaseId = caseMatch?.params?.id;
+
+  const { data: activeCase } = useQuery({
+    queryKey: ["case", activeCaseId],
+    queryFn: () => getCaseById(activeCaseId!),
+    enabled: !!activeCaseId,
+  });
 
   const navItems = [
     { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, show: true },
@@ -22,6 +38,9 @@ export function AppSidebar({ collapsed, onToggle }: { collapsed: boolean; onTogg
     { title: "Audit Trail", url: "/audit", icon: History, show: isAdmin || isAdviser || isParaplanner },
     { title: "Admin Panel", url: "/admin", icon: ShieldCheck, show: isAdmin },
   ].filter((i) => i.show);
+
+  const currentStage: number = (activeCase as any)?.current_stage ?? 1;
+  const stagesCompleted: number[] = (activeCase as any)?.stages_completed ?? [];
 
   return (
     <aside
@@ -50,6 +69,9 @@ export function AppSidebar({ collapsed, onToggle }: { collapsed: boolean; onTogg
           {navItems.map((item) => {
             const isActive =
               location.pathname === item.url || (item.url !== "/dashboard" && location.pathname.startsWith(item.url));
+            const isCasesItem = item.url === "/cases";
+            const showProgress = isCasesItem && !!activeCase && !collapsed;
+
             return (
               <li key={item.url}>
                 <NavLink
@@ -63,6 +85,52 @@ export function AppSidebar({ collapsed, onToggle }: { collapsed: boolean; onTogg
                   <item.icon className="h-[18px] w-[18px] shrink-0" />
                   {!collapsed && <span>{item.title}</span>}
                 </NavLink>
+
+                {/* Progress sub-navigation under Cases */}
+                {showProgress && (
+                  <div className="mt-1 ml-3 pl-3 border-l border-sidebar-border/60">
+                    <div className="flex items-center justify-between px-2 pt-2 pb-1">
+                      <span className="text-[10px] uppercase tracking-wider text-sidebar-foreground/60 font-semibold">
+                        Progress
+                      </span>
+                      <span className="text-[10px] text-sidebar-foreground/60">
+                        {stagesCompleted.length}/{CEDING_STAGES.length}
+                      </span>
+                    </div>
+                    <ol className="space-y-0.5">
+                      {CEDING_STAGES.map((s) => {
+                        const isDone = stagesCompleted.includes(s.num);
+                        const isCurrent = currentStage === s.num;
+                        return (
+                          <li key={s.num}>
+                            <button
+                              onClick={() =>
+                                navigate(`/cases/${activeCaseId}`, {
+                                  state: { goToStage: s.num },
+                                })
+                              }
+                              title={s.label}
+                              className={`flex w-full items-center gap-2 text-left text-[11px] px-2 py-1 rounded-md transition-colors ${
+                                isCurrent
+                                  ? "bg-sidebar-accent text-sidebar-primary font-semibold"
+                                  : "text-sidebar-foreground/80 hover:bg-sidebar-muted hover:text-sidebar-accent-foreground"
+                              }`}
+                            >
+                              {isDone ? (
+                                <CheckCircle2 className="h-3.5 w-3.5 text-success shrink-0" />
+                              ) : (
+                                <Circle className="h-3.5 w-3.5 text-sidebar-foreground/40 shrink-0" />
+                              )}
+                              <span className="flex-1 truncate">
+                                {s.num}. {s.label}
+                              </span>
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ol>
+                  </div>
+                )}
               </li>
             );
           })}
