@@ -34,9 +34,9 @@ function formatTs(iso: string | null): string {
 }
 
 export function ExportWorkspace({ caseItem }: Props) {
-  const { activeProfile } = useRole();
-  const { fields, isLoading } = useChecklistFields(caseItem.id);
+  const { role, userName } = useRole();
   const template = getTemplate(caseItem.plan_type);
+  const { rows: fields, loading: isLoading } = useChecklistFields({ caseId: caseItem.id, template });
   const [exporting, setExporting] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [lastExportAt, setLastExportAt] = useState<string | null>(null);
