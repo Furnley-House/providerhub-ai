@@ -41,6 +41,38 @@ export function ExportWorkspace({ caseItem }: Props) {
   const [uploading, setUploading] = useState(false);
   const [lastExportAt, setLastExportAt] = useState<string | null>(null);
   const [workdriveLink, setWorkdriveLink] = useState<string | null>(null);
+  const [preparingSR, setPreparingSR] = useState(false);
+
+  const handlePrepareSR = async () => {
+    if (!caseItem.zoho_task_id) {
+      toast.error("No Zoho task linked", { description: "Add a Zoho task ID to this case first." });
+      return;
+    }
+    setPreparingSR(true);
+    try {
+      // Stub: in production this hits a Zoho CRM edge function that triggers the
+      // "SR Preparation" blueprint transition on the linked task.
+      await new Promise((r) => setTimeout(r, 800));
+      await supabase.from("field_audit").insert({
+        case_id: caseItem.id,
+        action: "sr_blueprint_triggered",
+        source: "export",
+        actor_name: userName,
+        actor_role: role,
+        notes: `Triggered SR Preparation blueprint on Zoho task ${caseItem.zoho_task_id}`,
+      });
+      const taskUrl = `https://crm.zoho.eu/crm/tab/Tasks/${caseItem.zoho_task_id}`;
+      toast.success("SR blueprint triggered", { description: "Opening Zoho task…" });
+      window.open(taskUrl, "_blank", "noopener,noreferrer");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to trigger blueprint", {
+        description: err instanceof Error ? err.message : "Unknown error",
+      });
+    } finally {
+      setPreparingSR(false);
+    }
+  };
 
   const stats = useMemo(() => {
     const total = template.length;
