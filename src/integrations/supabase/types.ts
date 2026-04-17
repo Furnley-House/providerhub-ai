@@ -112,14 +112,18 @@ export type Database = {
       cases: {
         Row: {
           ai_extraction_date: string | null
+          assigned_role: string | null
+          case_notes: string | null
           case_ref: string
           ceding_complete_date: string | null
           client_name: string
           confidence_score: number | null
           created_at: string
+          current_stage: number
           current_value: string | null
           id: string
           is_overdue: boolean | null
+          last_activity_at: string
           loa_sent_date: string | null
           missing_fields_count: number | null
           owner_id: string | null
@@ -127,24 +131,32 @@ export type Database = {
           pdf_expected_date: string | null
           pdf_received_date: string | null
           plan_number: string
+          plan_ref: string | null
           plan_type: string
           processing_expected: string | null
           provider_id: string | null
           provider_name: string
+          rag: string
+          stages_completed: number[]
           status: string
           transfer_value: string | null
           updated_at: string
+          zoho_task_id: string | null
         }
         Insert: {
           ai_extraction_date?: string | null
+          assigned_role?: string | null
+          case_notes?: string | null
           case_ref: string
           ceding_complete_date?: string | null
           client_name: string
           confidence_score?: number | null
           created_at?: string
+          current_stage?: number
           current_value?: string | null
           id?: string
           is_overdue?: boolean | null
+          last_activity_at?: string
           loa_sent_date?: string | null
           missing_fields_count?: number | null
           owner_id?: string | null
@@ -152,24 +164,32 @@ export type Database = {
           pdf_expected_date?: string | null
           pdf_received_date?: string | null
           plan_number: string
+          plan_ref?: string | null
           plan_type?: string
           processing_expected?: string | null
           provider_id?: string | null
           provider_name: string
+          rag?: string
+          stages_completed?: number[]
           status?: string
           transfer_value?: string | null
           updated_at?: string
+          zoho_task_id?: string | null
         }
         Update: {
           ai_extraction_date?: string | null
+          assigned_role?: string | null
+          case_notes?: string | null
           case_ref?: string
           ceding_complete_date?: string | null
           client_name?: string
           confidence_score?: number | null
           created_at?: string
+          current_stage?: number
           current_value?: string | null
           id?: string
           is_overdue?: boolean | null
+          last_activity_at?: string
           loa_sent_date?: string | null
           missing_fields_count?: number | null
           owner_id?: string | null
@@ -177,13 +197,17 @@ export type Database = {
           pdf_expected_date?: string | null
           pdf_received_date?: string | null
           plan_number?: string
+          plan_ref?: string | null
           plan_type?: string
           processing_expected?: string | null
           provider_id?: string | null
           provider_name?: string
+          rag?: string
+          stages_completed?: number[]
           status?: string
           transfer_value?: string | null
           updated_at?: string
+          zoho_task_id?: string | null
         }
         Relationships: [
           {

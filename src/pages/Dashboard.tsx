@@ -1,154 +1,176 @@
-import { SectionHeader } from "@/components/shared/StatusComponents";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  Clock, FileText, Phone, AlertTriangle, CheckCircle, Loader2,
-  ArrowRight, Briefcase, BarChart3, Zap, FolderOpen, Users
+  Briefcase,
+  Sparkles,
+  Database,
+  AlertTriangle,
+  CheckCircle2,
+  Clock,
+  TrendingUp,
+  ArrowRight,
 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { getCases, getTasks } from "@/services/api";
+import { getCases } from "@/services/api";
+import { useRole } from "@/hooks/useRole";
+import { calculateRag, RAG_STYLES, STATUS_LABELS, STATUS_STYLES } from "@/lib/caseHelpers";
+import { seedDemoData } from "@/lib/seedDemoData";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 
 const Dashboard = () => {
-  const { data: cases = [], isLoading: casesLoading } = useQuery({ queryKey: ["cases"], queryFn: getCases });
-  const { data: tasks = [], isLoading: tasksLoading } = useQuery({ queryKey: ["tasks"], queryFn: () => getTasks() });
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const { userName, role } = useRole();
 
-  const isLoading = casesLoading || tasksLoading;
+  const { data: cases = [], isLoading } = useQuery({ queryKey: ["cases"], queryFn: getCases });
 
-  const totalCases = cases.length;
-  const activeCases = cases.filter(c => c.status !== 'complete').length;
-  const completedCases = cases.filter(c => c.status === 'complete').length;
-  const overdueCount = cases.filter(c => c.is_overdue).length;
-  const pendingTasks = tasks.filter(t => !t.completed).length;
+  const seedMutation = useMutation({
+    mutationFn: seedDemoData,
+    onSuccess: (r) => {
+      qc.invalidateQueries({ queryKey: ["cases"] });
+      toast.success(r.inserted > 0 ? `Loaded ${r.inserted} demo cases` : "Demo cases already loaded");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
-  const pipelineStages = [
-    { key: 'loa_sent', label: 'LOA Sent', color: 'bg-info' },
-    { key: 'loa_processed', label: 'LOA Processed', color: 'bg-info' },
-    { key: 'waiting_pdf', label: 'Waiting PDF', color: 'bg-warning' },
-    { key: 'pdf_received', label: 'PDF Received', color: 'bg-primary' },
-    { key: 'ceding_in_progress', label: 'Ceding', color: 'bg-primary' },
-    { key: 'complete', label: 'Complete', color: 'bg-success' },
-  ];
+  const today = new Date();
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
+  monday.setHours(0, 0, 0, 0);
 
-  const stageCounts = pipelineStages.map(s => ({
-    ...s,
-    count: cases.filter(c => c.status === s.key).length,
-  }));
+  const weeklyCompleted = cases.filter(
+    (c) => c.status === "complete" && new Date(c.updated_at) >= monday,
+  ).length;
+  const inReview = cases.filter((c) => c.status === "in_review").length;
+  const onHold = cases.filter((c) => c.status === "on_hold").length;
+  const active = cases.filter((c) => !["complete", "approved"].includes(c.status)).length;
 
-  const recentCases = cases.slice(0, 5);
-
-  const quickActions = [
-    { label: 'New Case', icon: FolderOpen, to: '/cases', description: 'Start a new LOA case' },
-    { label: 'Document Inbox', icon: FileText, to: '/documents', description: 'Process uploaded PDFs' },
-    { label: 'Call Assist', icon: Phone, to: '/call-assist', description: 'Log & analyze calls' },
-    { label: 'Provider Directory', icon: Users, to: '/providers', description: 'Manage provider info' },
-  ];
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
+  const recent = [...cases]
+    .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+    .slice(0, 6);
 
   return (
     <div className="animate-slide-in">
-      <SectionHeader
-        title="Dashboard"
-        subtitle={new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-      />
-
-      {/* KPI Row */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 mb-6">
-        <KPICard icon={Briefcase} label="Active Cases" value={activeCases} sub={`${totalCases} total`} accent="primary" />
-        <KPICard icon={CheckCircle} label="Completed" value={completedCases} sub="Cases closed" accent="success" />
-        <KPICard icon={AlertTriangle} label="Overdue" value={overdueCount} sub="Need attention" accent={overdueCount > 0 ? "overdue" : "muted"} />
-        <KPICard icon={Clock} label="Pending Tasks" value={pendingTasks} sub="Across all cases" accent="warning" />
+      <div className="mb-6 flex items-start justify-between">
+        <div>
+          <p className="text-xs uppercase tracking-widest text-teal font-semibold mb-1">
+            {today.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}
+          </p>
+          <h1 className="text-2xl font-bold theme-heading text-foreground">Welcome back, {userName?.split(" ")[0]}</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Here's what's happening across your ceding cases today.
+          </p>
+        </div>
+        {cases.length === 0 && (
+          <Button onClick={() => seedMutation.mutate()} disabled={seedMutation.isPending} className="gap-2">
+            <Database className="h-4 w-4" />
+            {seedMutation.isPending ? "Loading…" : "Load Demo Data"}
+          </Button>
+        )}
       </div>
 
-      {/* Pipeline Overview */}
-      <div className="theme-card theme-card-accent border border-border bg-card mb-6">
-        <div className="flex items-center gap-2 mb-4">
-          <BarChart3 className="h-4 w-4 text-primary" />
-          <h2 className="text-sm theme-heading text-foreground">Pipeline Overview</h2>
-        </div>
-        <div className="flex gap-1">
-          {stageCounts.map((stage, i) => {
-            const width = totalCases > 0 ? Math.max((stage.count / totalCases) * 100, stage.count > 0 ? 8 : 2) : 100 / stageCounts.length;
-            return (
-              <div key={stage.key} className="flex-1 min-w-0" style={{ flex: `${width} 1 0%` }}>
-                <div className={`pipeline-bar h-2 ${stage.color} ${i === 0 ? 'rounded-l-full' : ''} ${i === stageCounts.length - 1 ? 'rounded-r-full' : ''}`} />
-                <p className="mt-2 text-xs font-medium text-foreground text-center">{stage.count}</p>
-                <p className="text-[10px] text-muted-foreground text-center truncate">{stage.label}</p>
-              </div>
-            );
-          })}
-        </div>
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 mb-6">
+        <KPICard icon={Briefcase} label="Active cases" value={active} sub={`${cases.length} total`} accent="primary" />
+        <KPICard icon={CheckCircle2} label="Completed this week" value={weeklyCompleted} sub="Primary KPI" accent="success" />
+        <KPICard icon={Clock} label="In review" value={inReview} sub="Awaiting approval" accent="warning" />
+        <KPICard icon={AlertTriangle} label="On hold" value={onHold} sub="Need attention" accent={onHold > 0 ? "overdue" : "muted"} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Recent Cases */}
         <div className="lg:col-span-2 theme-card theme-card-accent border border-border bg-card overflow-hidden p-0">
           <div className="border-b border-border bg-muted/30 px-5 py-3 flex items-center justify-between">
             <h2 className="text-sm theme-heading text-foreground flex items-center gap-2">
-              <Briefcase className="h-4 w-4 text-primary" /> Recent Cases
+              <Briefcase className="h-4 w-4 text-teal" /> Recent Activity
             </h2>
-            <Link to="/cases" className="text-xs text-primary hover:underline flex items-center gap-1">
-              View all <ArrowRight className="h-3 w-3" />
-            </Link>
+            <button
+              onClick={() => navigate("/cases")}
+              className="text-xs text-teal hover:underline flex items-center gap-1 font-semibold"
+            >
+              View all cases <ArrowRight className="h-3 w-3" />
+            </button>
           </div>
-          {recentCases.length > 0 ? (
-            <div className="divide-y divide-border">
-              {recentCases.map(c => (
-                <Link
-                  key={c.id}
-                  to={`/cases/${c.id}`}
-                  className="flex items-center gap-4 px-5 py-3 hover:bg-muted/50 transition-colors"
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      {c.is_overdue && <AlertTriangle className="h-3.5 w-3.5 text-overdue shrink-0" />}
-                      <p className="text-sm font-medium text-foreground truncate">{c.client_name}</p>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">{c.provider_name} · {c.plan_number}</p>
-                  </div>
-                  <StatusPill status={c.status} />
-                  <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
-                </Link>
-              ))}
+
+          {isLoading ? (
+            <div className="p-12 text-center text-sm text-muted-foreground">Loading…</div>
+          ) : recent.length === 0 ? (
+            <div className="px-5 py-16 text-center">
+              <Briefcase className="mx-auto mb-3 h-10 w-10 text-muted-foreground/40" />
+              <p className="text-sm font-medium text-foreground">No ceding cases yet</p>
+              <p className="text-xs text-muted-foreground mt-1 mb-4">
+                Click "Load Demo Data" above to populate sample cases.
+              </p>
             </div>
           ) : (
-            <div className="px-5 py-12 text-center">
-              <Briefcase className="mx-auto mb-3 h-8 w-8 text-muted-foreground/40" />
-              <p className="text-sm text-muted-foreground">No cases yet</p>
-              <p className="text-xs text-muted-foreground mt-1">Create your first case from the Cases page</p>
+            <div className="divide-y divide-border">
+              {recent.map((c) => {
+                const rag = calculateRag(c);
+                const ragStyle = RAG_STYLES[rag];
+                const statusStyle = STATUS_STYLES[c.status] ?? "bg-muted text-muted-foreground";
+                return (
+                  <button
+                    key={c.id}
+                    onClick={() => navigate(`/cases/${c.id}`)}
+                    className="flex w-full items-center gap-4 px-5 py-3 hover:bg-muted/50 transition-colors text-left"
+                  >
+                    <span className={`h-2.5 w-2.5 rounded-full shrink-0 ${ragStyle.dot}`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">{c.client_name}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {c.provider_name} · {c.plan_type} · {c.plan_number}
+                      </p>
+                    </div>
+                    <span className={`hidden sm:inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold ${statusStyle}`}>
+                      {STATUS_LABELS[c.status] ?? c.status}
+                    </span>
+                    <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
 
-        {/* Quick Actions */}
-        <div className="space-y-6">
-          <div className="theme-card theme-card-accent border border-border bg-card overflow-hidden p-0">
-            <div className="border-b border-border bg-muted/30 px-5 py-3">
-              <h2 className="text-sm theme-heading text-foreground flex items-center gap-2">
-                <Zap className="h-4 w-4 text-primary" /> Quick Actions
-              </h2>
+        <div className="space-y-4">
+          <div className="theme-card theme-card-accent border border-border bg-card">
+            <div className="flex items-center gap-2 mb-3">
+              <Sparkles className="h-4 w-4 text-teal" />
+              <h3 className="text-sm theme-heading">Your role</h3>
             </div>
-            <div className="p-3 space-y-1">
-              {quickActions.map(a => (
-                <Link
-                  key={a.to}
-                  to={a.to}
-                  className="flex items-center gap-3 px-3 py-2.5 hover:bg-muted/50 transition-colors theme-sidebar-item"
+            <p className="text-xs text-muted-foreground mb-2">You're signed in as <strong className="text-foreground">{userName}</strong>.</p>
+            <p className="text-xs text-muted-foreground">
+              {role === "ca_team" && "You can upload documents, edit checklists, and run AI extraction across all cases."}
+              {role === "adviser" && "You can review approved checklists and finalise case recommendations."}
+              {role === "paraplanner" && "You can review extracted data and approve or request review on each field."}
+              {role === "admin" && "You have full access to the Admin Panel, Provider Directory, and templates."}
+            </p>
+          </div>
+
+          <div className="theme-card theme-card-accent border border-border bg-card">
+            <div className="flex items-center gap-2 mb-3">
+              <TrendingUp className="h-4 w-4 text-teal" />
+              <h3 className="text-sm theme-heading">Quick start</h3>
+            </div>
+            <div className="space-y-2">
+              <button
+                onClick={() => navigate("/cases")}
+                className="w-full text-left text-xs px-3 py-2 rounded-md border border-border hover:bg-muted transition-colors"
+              >
+                + Create a new case
+              </button>
+              <button
+                onClick={() => navigate("/providers")}
+                className="w-full text-left text-xs px-3 py-2 rounded-md border border-border hover:bg-muted transition-colors"
+              >
+                Browse Provider Directory
+              </button>
+              {cases.length === 0 && (
+                <button
+                  onClick={() => seedMutation.mutate()}
+                  className="w-full text-left text-xs px-3 py-2 rounded-md border border-border hover:bg-muted transition-colors"
                 >
-                  <div className="flex h-8 w-8 items-center justify-center bg-primary/10 theme-btn" style={{ borderRadius: 'var(--btn-radius)' }}>
-                    <a.icon className="h-4 w-4 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{a.label}</p>
-                    <p className="text-[11px] text-muted-foreground">{a.description}</p>
-                  </div>
-                </Link>
-              ))}
+                  Load 5 demo cases
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -157,54 +179,43 @@ const Dashboard = () => {
   );
 };
 
-// ── Sub-components ────────────────────────────────
-
-function KPICard({ icon: Icon, label, value, sub, accent }: {
-  icon: React.ElementType; label: string; value: number; sub: string;
-  accent: 'primary' | 'success' | 'warning' | 'overdue' | 'muted';
+function KPICard({
+  icon: Icon,
+  label,
+  value,
+  sub,
+  accent,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: number;
+  sub: string;
+  accent: "primary" | "success" | "warning" | "overdue" | "muted";
 }) {
-  const iconBg = accent === 'primary' ? 'bg-primary/10 text-primary'
-    : accent === 'success' ? 'bg-success/10 text-success'
-    : accent === 'warning' ? 'bg-warning/10 text-warning'
-    : accent === 'overdue' ? 'bg-overdue/10 text-overdue'
-    : 'bg-muted text-muted-foreground';
+  const iconBg =
+    accent === "primary"
+      ? "bg-teal/15 text-teal"
+      : accent === "success"
+      ? "bg-success/15 text-success"
+      : accent === "warning"
+      ? "bg-warning/15 text-warning"
+      : accent === "overdue"
+      ? "bg-overdue/15 text-overdue"
+      : "bg-muted text-muted-foreground";
 
   return (
     <div className="kpi-card theme-card border border-border bg-card">
       <div className="flex items-center gap-3">
-        <div className={`flex h-9 w-9 items-center justify-center ${iconBg}`} style={{ borderRadius: 'var(--btn-radius)' }}>
-          <Icon className="h-4 w-4" />
+        <div className={`flex h-10 w-10 items-center justify-center rounded-md ${iconBg}`}>
+          <Icon className="h-5 w-5" />
         </div>
         <div>
-          <p className="text-2xl font-bold text-foreground theme-heading">{value}</p>
-          <p className="text-xs text-muted-foreground">{label}</p>
+          <p className="text-2xl font-bold text-foreground theme-heading leading-none">{value}</p>
+          <p className="text-xs text-muted-foreground mt-1">{label}</p>
         </div>
       </div>
-      <p className="mt-2 text-[11px] text-muted-foreground">{sub}</p>
+      <p className="mt-3 text-[11px] text-muted-foreground">{sub}</p>
     </div>
-  );
-}
-
-function StatusPill({ status }: { status: string }) {
-  const styles: Record<string, string> = {
-    loa_sent: 'bg-info/15 text-info',
-    loa_processed: 'bg-info/15 text-info',
-    waiting_pdf: 'bg-warning/15 text-warning',
-    pdf_received: 'bg-primary/15 text-primary',
-    ceding_in_progress: 'bg-primary/15 text-primary',
-    complete: 'bg-success/15 text-success',
-  };
-  const labels: Record<string, string> = {
-    loa_sent: 'LOA Sent', loa_processed: 'LOA Processed', waiting_pdf: 'Waiting PDF',
-    pdf_received: 'PDF Received', ceding_in_progress: 'Ceding', complete: 'Complete',
-  };
-  return (
-    <span
-      className={`theme-badge inline-flex items-center px-2 py-0.5 text-[10px] font-semibold ${styles[status] || 'bg-muted text-muted-foreground'}`}
-      style={{ borderRadius: 'var(--badge-radius)' }}
-    >
-      {labels[status] || status}
-    </span>
   );
 }
 

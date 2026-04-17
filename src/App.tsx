@@ -2,20 +2,17 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@/hooks/useTheme";
+import { RoleProvider } from "@/hooks/useRole";
+import { RoleGuard } from "@/components/RoleGuard";
 import { AppLayout } from "@/components/layout/AppLayout";
-import Auth from "./pages/Auth";
+import RolePicker from "./pages/RolePicker";
 import Dashboard from "./pages/Dashboard";
 import Cases from "./pages/Cases";
 import CaseDetail from "./pages/CaseDetail";
-import DocumentInbox from "./pages/DocumentInbox";
-import CedingChecklist from "./pages/CedingChecklist";
-import MissingData from "./pages/MissingData";
 import ProviderDirectory from "./pages/ProviderDirectory";
-import Automations from "./pages/Automations";
-import CallAssist from "./pages/CallAssist";
-import FounderView from "./pages/FounderView";
+import Admin from "./pages/Admin";
 import Presentation from "./pages/Presentation";
 import LOAWorkflow from "./pages/LOAWorkflow";
 import NotFound from "./pages/NotFound";
@@ -25,30 +22,40 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/presentation" element={<Presentation />} />
-            <Route path="/loa-workflow" element={<LOAWorkflow />} />
-            <Route element={<AppLayout />}>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/cases" element={<Cases />} />
-              <Route path="/cases/:id" element={<CaseDetail />} />
-              <Route path="/documents" element={<DocumentInbox />} />
-              <Route path="/ceding" element={<CedingChecklist />} />
-              <Route path="/missing-data" element={<MissingData />} />
-              <Route path="/providers" element={<ProviderDirectory />} />
-              <Route path="/automations" element={<Automations />} />
-              <Route path="/call-assist" element={<CallAssist />} />
-              <Route path="/founder" element={<FounderView />} />
-            </Route>
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+      <RoleProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<RolePicker />} />
+              <Route path="/presentation" element={<Presentation />} />
+              <Route path="/loa-workflow" element={<LOAWorkflow />} />
+              <Route
+                element={
+                  <RoleGuard>
+                    <AppLayout />
+                  </RoleGuard>
+                }
+              >
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/cases" element={<Cases />} />
+                <Route path="/cases/:id" element={<CaseDetail />} />
+                <Route path="/providers" element={<ProviderDirectory />} />
+                <Route
+                  path="/admin"
+                  element={
+                    <RoleGuard allow={["admin"]}>
+                      <Admin />
+                    </RoleGuard>
+                  }
+                />
+              </Route>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </RoleProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );
