@@ -24,6 +24,7 @@ import {
 const CaseDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const qc = useQueryClient();
   const { isCA } = useRole();
 
