@@ -4,6 +4,7 @@ import {
   CircleAlert,
   CircleHelp,
   CircleDashed,
+  FileSearch,
   MessageSquare,
   Pencil,
   RotateCcw,
@@ -39,6 +40,8 @@ interface Props {
   def: ChecklistFieldDef;
   state: ChecklistFieldState;
   onChange: (next: Partial<ChecklistFieldState>) => void;
+  /** When provided, renders a "jump to source" button next to the field */
+  onJumpToSource?: () => void;
 }
 
 const CONF_META: Record<Confidence, { label: string; icon: React.ElementType; cls: string }> = {
@@ -48,7 +51,7 @@ const CONF_META: Record<Confidence, { label: string; icon: React.ElementType; cl
   MISSING: { label: "Missing", icon: CircleDashed, cls: "bg-muted text-muted-foreground border-border" },
 };
 
-export function ChecklistField({ def, state, onChange }: Props) {
+export function ChecklistField({ def, state, onChange, onJumpToSource }: Props) {
   const { canEditChecklist, canApprove, userName } = useRole();
   const [localValue, setLocalValue] = useState(state.value ?? "");
   const [reviewOpen, setReviewOpen] = useState(false);
