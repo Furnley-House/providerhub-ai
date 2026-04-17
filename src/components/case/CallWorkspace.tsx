@@ -518,14 +518,16 @@ export function CallWorkspace({ caseId, planType, clientName, providerName, plan
             )}
             {script && (
               <div className="space-y-3">
-                <p className="text-foreground leading-relaxed italic">"{script.opener}"</p>
-                {script.sections.map((s, i) => (
+                {script.opener && (
+                  <p className="text-foreground leading-relaxed italic">"{script.opener}"</p>
+                )}
+                {(script.sections ?? []).map((s, i) => (
                   <div key={i}>
                     <p className="text-[10px] uppercase tracking-wider text-teal font-semibold mb-1">
                       {s.title}
                     </p>
                     <ul className="space-y-1">
-                      {s.questions.map((q, j) => (
+                      {(s.questions ?? []).map((q, j) => (
                         <li key={j} className="text-xs flex gap-1.5">
                           <ChevronRight className="h-3 w-3 mt-0.5 shrink-0 text-muted-foreground" />
                           <span className="text-foreground">{q.question}</span>
@@ -534,7 +536,7 @@ export function CallWorkspace({ caseId, planType, clientName, providerName, plan
                     </ul>
                   </div>
                 ))}
-                {script.objection_handlers.length > 0 && (
+                {(script.objection_handlers ?? []).length > 0 && (
                   <details className="text-xs">
                     <summary className="cursor-pointer text-[10px] uppercase tracking-wider text-warning font-semibold">
                       Objection handlers ({script.objection_handlers.length})
@@ -549,9 +551,11 @@ export function CallWorkspace({ caseId, planType, clientName, providerName, plan
                     </ul>
                   </details>
                 )}
-                <p className="text-foreground leading-relaxed italic border-t border-border pt-2">
-                  "{script.closing}"
-                </p>
+                {script.closing && (
+                  <p className="text-foreground leading-relaxed italic border-t border-border pt-2">
+                    "{script.closing}"
+                  </p>
+                )}
               </div>
             )}
           </div>
