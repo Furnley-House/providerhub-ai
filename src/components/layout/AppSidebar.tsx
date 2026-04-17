@@ -4,18 +4,20 @@ import {
   Briefcase,
   Building2,
   ShieldCheck,
+  History,
 } from "lucide-react";
 import { useRole } from "@/hooks/useRole";
 import logo from "@/assets/logo-white.png";
 
 export function AppSidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
   const location = useLocation();
-  const { isAdmin } = useRole();
+  const { isAdmin, isAdviser, isParaplanner } = useRole();
 
   const navItems = [
     { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, show: true },
     { title: "Cases", url: "/cases", icon: Briefcase, show: true },
     { title: "Provider Directory", url: "/providers", icon: Building2, show: true },
+    { title: "Audit Trail", url: "/audit", icon: History, show: isAdmin || isAdviser || isParaplanner },
     { title: "Admin Panel", url: "/admin", icon: ShieldCheck, show: isAdmin },
   ].filter((i) => i.show);
 
