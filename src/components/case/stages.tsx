@@ -294,9 +294,10 @@ export function StageExport({ caseItem }: StageProps) {
       num={10}
       icon={Download}
       title="Export & Upload to WorkDrive"
-      description="Generate the completed checklist as Excel and push to Zoho WorkDrive."
-      comingSoon="Phase 7: .xlsx export (Checklist + Audit Trail tabs) + WorkDrive stub + Suitability Report handoff"
-    />
+      description="Generate the completed checklist as Excel (Summary + Checklist + Audit Trail tabs) and push to Zoho WorkDrive."
+    >
+      <ExportWorkspace caseItem={caseItem} />
+    </StagePanel>
   );
 }
 
