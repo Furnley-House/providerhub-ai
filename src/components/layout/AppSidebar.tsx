@@ -5,6 +5,7 @@ import {
   Building2,
   ShieldCheck,
   History,
+  Inbox,
 } from "lucide-react";
 import { useRole } from "@/hooks/useRole";
 import logo from "@/assets/logo-white.png";
@@ -15,6 +16,7 @@ export function AppSidebar({ collapsed, onToggle }: { collapsed: boolean; onTogg
 
   const navItems = [
     { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, show: true },
+    { title: "My Inbox", url: "/inbox", icon: Inbox, show: isParaplanner || isAdviser || isAdmin },
     { title: "Cases", url: "/cases", icon: Briefcase, show: true },
     { title: "Provider Directory", url: "/providers", icon: Building2, show: true },
     { title: "Audit Trail", url: "/audit", icon: History, show: isAdmin || isAdviser || isParaplanner },
