@@ -344,11 +344,36 @@ export function ExportWorkspace({ caseItem }: Props) {
         </div>
       </div>
 
-      <div className="rounded-md border border-dashed border-border bg-muted/20 p-3">
-        <p className="text-[11px] text-muted-foreground">
-          <span className="font-semibold text-foreground">Next:</span> the Suitability Report handoff (Phase 11) will
-          pick up this same workbook and pre-fill the SR template with the approved values.
-        </p>
+      <div className="rounded-md border border-teal/30 bg-teal/5 p-4">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-md bg-teal/15 text-teal shrink-0">
+            <Sparkles className="h-5 w-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] uppercase tracking-widest font-bold text-teal">
+              Hand off to adviser
+            </p>
+            <h4 className="text-sm font-bold text-foreground">Prepare for Suitability Report</h4>
+            <p className="text-xs text-muted-foreground mt-1">
+              Triggers the <span className="font-semibold text-foreground">SR Preparation</span> blueprint in Zoho
+              CRM and opens the linked task so the adviser can take over.
+              {!caseItem.zoho_task_id && (
+                <span className="block mt-1 text-warning font-medium">
+                  No Zoho task linked to this case yet.
+                </span>
+              )}
+            </p>
+          </div>
+          <Button
+            onClick={handlePrepareSR}
+            disabled={preparingSR || !caseItem.zoho_task_id}
+            className="gap-2 shrink-0"
+          >
+            {preparingSR ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+            {preparingSR ? "Triggering…" : "Prepare SR"}
+            {!preparingSR && <ExternalLink className="h-3.5 w-3.5" />}
+          </Button>
+        </div>
       </div>
     </div>
   );
