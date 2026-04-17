@@ -18,7 +18,11 @@ import { DocumentList } from "./DocumentList";
 import { ExtractionWorkspace } from "./ExtractionWorkspace";
 import { CallWorkspace } from "./CallWorkspace";
 import { AuditTimeline } from "./AuditTimeline";
+import { AssignParaplannerDialog } from "./AssignParaplannerDialog";
 import { useDocuments } from "@/hooks/useDocuments";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { getParaplanner } from "@/lib/paraplanners";
 
 interface StageProps {
   caseItem: CaseRow;
@@ -211,14 +215,62 @@ export function StageAuditTrail({ caseItem }: StageProps) {
 }
 
 export function StageAssign({ caseItem }: StageProps) {
+  const [open, setOpen] = useState(false);
+  const assignedTo = caseItem.owner_id ? getParaplanner(caseItem.owner_id) : undefined;
+  const isAssigned = caseItem.assigned_role === "paraplanner" && !!assignedTo;
+
   return (
     <StagePanel
       num={8}
       icon={UserCheck}
       title="Assign to Paraplanner"
-      description="When the checklist is complete, hand off to the paraplanner for review."
-      comingSoon="Phase 6: assign modal + Zoho CRM task stub + in-app notification"
-    />
+      description="Hand off to a paraplanner for field-by-field review and sign-off."
+    >
+      {isAssigned ? (
+        <div className="space-y-3">
+          <div className="rounded-md border border-success/30 bg-success/5 p-4">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold shrink-0">
+                {assignedTo!.initials}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] uppercase tracking-widest text-success font-bold">
+                  Assigned · awaiting review
+                </p>
+                <p className="text-base font-bold text-foreground">{assignedTo!.full_name}</p>
+                <p className="text-xs text-muted-foreground">{assignedTo!.specialism}</p>
+                {caseItem.zoho_task_id && (
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    Zoho task <span className="font-mono text-foreground">{caseItem.zoho_task_id}</span>
+                  </p>
+                )}
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
+                Reassign
+              </Button>
+            </div>
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            Move to Step 9 to track the paraplanner's per-field approvals.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <div className="rounded-md border border-border bg-muted/30 p-4 text-center">
+            <UserCheck className="h-7 w-7 mx-auto text-teal mb-2" />
+            <p className="text-sm font-semibold text-foreground">No paraplanner assigned yet</p>
+            <p className="text-xs text-muted-foreground mt-1 mb-4">
+              Pick from the available paraplanners — Zoho task is created automatically and the paraplanner is notified in-app.
+            </p>
+            <Button onClick={() => setOpen(true)} className="gap-2">
+              <UserCheck className="h-4 w-4" /> Assign paraplanner
+            </Button>
+          </div>
+        </div>
+      )}
+
+      <AssignParaplannerDialog caseItem={caseItem} open={open} onOpenChange={setOpen} />
+    </StagePanel>
   );
 }
 
