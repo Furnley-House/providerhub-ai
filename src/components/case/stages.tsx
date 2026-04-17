@@ -11,7 +11,6 @@ import {
   Download,
   Sparkles,
 } from "lucide-react";
-import { ChecklistPanel } from "./ChecklistPanel";
 import { DocumentUploader } from "./DocumentUploader";
 import { DocumentList } from "./DocumentList";
 import { ExtractionWorkspace } from "./ExtractionWorkspace";
@@ -29,6 +28,8 @@ import { getParaplanner } from "@/lib/paraplanners";
 interface StageProps {
   caseItem: CaseRow;
 }
+
+const TOTAL_STAGES = 10;
 
 function StagePanel({
   num,
@@ -52,7 +53,7 @@ function StagePanel({
           <Icon className="h-5 w-5" />
         </div>
         <div className="flex-1">
-          <p className="text-[10px] uppercase tracking-widest text-teal font-semibold">Step {num} of 11</p>
+          <p className="text-[10px] uppercase tracking-widest text-teal font-semibold">Step {num} of {TOTAL_STAGES}</p>
           <h2 className="text-lg font-bold theme-heading text-foreground">{title}</h2>
           <p className="text-sm text-muted-foreground mt-0.5">{description}</p>
         </div>
@@ -144,23 +145,10 @@ export function StageAIExtraction({ caseItem }: StageProps) {
     <StagePanel
       num={3}
       icon={Cpu}
-      title="Extract Using AI"
-      description="Side-by-side viewer — Gemini reads each PDF, populates the checklist, and links every value to its source page."
+      title="Extract & Fill Gaps"
+      description="Side-by-side viewer — Gemini reads each PDF, populates the checklist, and links every value to its source page. Fill any remaining gaps inline."
     >
       <ExtractionWorkspace caseId={caseItem.id} planType={caseItem.plan_type} />
-    </StagePanel>
-  );
-}
-
-export function StageMissingData({ caseItem }: StageProps) {
-  return (
-    <StagePanel
-      num={4}
-      icon={ListChecks}
-      title="Fill the Gaps — Checklist"
-      description={`Plan-type-specific checklist for ${caseItem.plan_type}. Edit any field, every change is audit-logged.`}
-    >
-      <ChecklistPanel planType={caseItem.plan_type} caseId={caseItem.id} />
     </StagePanel>
   );
 }
@@ -168,7 +156,7 @@ export function StageMissingData({ caseItem }: StageProps) {
 export function StageCallAssist({ caseItem }: StageProps) {
   return (
     <StagePanel
-      num={5}
+      num={4}
       icon={Phone}
       title="Call Assist with AI Script"
       description="AI generates a tailored script targeting your remaining missing fields. Start the call (RingCentral in production), capture the transcript, then merge the agent's answers straight into the checklist."
@@ -187,10 +175,10 @@ export function StageCallAssist({ caseItem }: StageProps) {
 export function StageTranscript({ caseItem }: StageProps) {
   return (
     <StagePanel
-      num={6}
+      num={5}
       icon={FileAudio}
       title="Call Transcript with AI Assist"
-      description="Same workspace as Step 5 — paste the Palindrome transcript at any time and click Analyse. The merge engine preserves manual edits and approvals."
+      description="Same workspace as Step 4 — paste the Palindrome transcript at any time and click Analyse. The merge engine preserves manual edits and approvals."
     >
       <CallWorkspace
         caseId={caseItem.id}
@@ -206,7 +194,7 @@ export function StageTranscript({ caseItem }: StageProps) {
 export function StageAuditTrail({ caseItem }: StageProps) {
   return (
     <StagePanel
-      num={7}
+      num={6}
       icon={History}
       title="Audit Trail"
       description="Every field change on this case — AI extractions, manual edits, call merges, approvals — captured immutably."
@@ -223,7 +211,7 @@ export function StageAssign({ caseItem }: StageProps) {
 
   return (
     <StagePanel
-      num={8}
+      num={7}
       icon={UserCheck}
       title="Assign to Paraplanner"
       description="Hand off to a paraplanner for field-by-field review and sign-off."
@@ -253,7 +241,7 @@ export function StageAssign({ caseItem }: StageProps) {
             </div>
           </div>
           <p className="text-[11px] text-muted-foreground">
-            Move to Step 9 to track the paraplanner's per-field approvals.
+            Move to Step 8 to track the paraplanner's per-field approvals.
           </p>
         </div>
       ) : (
@@ -279,7 +267,7 @@ export function StageAssign({ caseItem }: StageProps) {
 export function StageApproval({ caseItem }: StageProps) {
   return (
     <StagePanel
-      num={9}
+      num={8}
       icon={CheckCircle2}
       title="Paraplanner / Adviser Approval"
       description="Per-field approve, request review with comment, then sign off the whole case once every field is approved."
@@ -292,7 +280,7 @@ export function StageApproval({ caseItem }: StageProps) {
 export function StageExport({ caseItem }: StageProps) {
   return (
     <StagePanel
-      num={10}
+      num={9}
       icon={Download}
       title="Export & Upload to WorkDrive"
       description="Generate the completed checklist as Excel (Summary + Checklist + Audit Trail tabs) and push to Zoho WorkDrive."
@@ -305,10 +293,10 @@ export function StageExport({ caseItem }: StageProps) {
 export function StageComplete({ caseItem }: StageProps) {
   return (
     <StagePanel
-      num={11}
+      num={10}
       icon={CheckCircle2}
       title="Ceding Complete"
-      description="All ten ceding steps are done — the case is ready for the adviser to take over for the Suitability Report."
+      description="All nine ceding steps are done — the case is ready for the adviser to take over for the Suitability Report."
     >
       <CompleteWorkspace caseItem={caseItem} />
     </StagePanel>
