@@ -314,6 +314,8 @@ export function StageComplete({ caseItem }: StageProps) {
     </StagePanel>
   );
 }
+
+function Detail({ label, value, mono, hint }: { label: string; value: string; mono?: boolean; hint?: string }) {
   return (
     <div>
       <dt className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{label}</dt>
