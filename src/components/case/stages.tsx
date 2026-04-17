@@ -302,7 +302,18 @@ export function StageExport({ caseItem }: StageProps) {
   );
 }
 
-function Detail({ label, value, mono, hint }: { label: string; value: string; mono?: boolean; hint?: string }) {
+export function StageComplete({ caseItem }: StageProps) {
+  return (
+    <StagePanel
+      num={11}
+      icon={CheckCircle2}
+      title="Ceding Complete"
+      description="All ten ceding steps are done — the case is ready for the adviser to take over for the Suitability Report."
+    >
+      <CompleteWorkspace caseItem={caseItem} />
+    </StagePanel>
+  );
+}
   return (
     <div>
       <dt className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{label}</dt>
