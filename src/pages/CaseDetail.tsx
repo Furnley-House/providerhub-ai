@@ -43,6 +43,18 @@ const CaseDetail = () => {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  // Handle stage navigation from sidebar sub-nav
+  useEffect(() => {
+    const target = (location.state as any)?.goToStage;
+    if (target && typeof target === "number") {
+      updateMutation.mutate({
+        updates: { current_stage: target, last_activity_at: new Date().toISOString() },
+      });
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
