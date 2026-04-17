@@ -52,7 +52,7 @@ function StagePanel({
           <Icon className="h-5 w-5" />
         </div>
         <div className="flex-1">
-          <p className="text-[10px] uppercase tracking-widest text-teal font-semibold">Step {num} of 10</p>
+          <p className="text-[10px] uppercase tracking-widest text-teal font-semibold">Step {num} of 11</p>
           <h2 className="text-lg font-bold theme-heading text-foreground">{title}</h2>
           <p className="text-sm text-muted-foreground mt-0.5">{description}</p>
         </div>
