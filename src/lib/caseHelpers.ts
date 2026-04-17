@@ -80,15 +80,14 @@ export function calculateRag(c: CaseRow): Rag {
 export const CEDING_STAGES = [
   { num: 1, key: "case_details", label: "Case Details" },
   { num: 2, key: "document_upload", label: "Document Upload" },
-  { num: 3, key: "ai_extraction", label: "Extract Using AI" },
-  { num: 4, key: "missing_data", label: "Fill Gaps" },
-  { num: 5, key: "call_assist", label: "Call Assist" },
-  { num: 6, key: "transcript", label: "Call Transcript" },
-  { num: 7, key: "audit_trail", label: "Audit Trail" },
-  { num: 8, key: "assign", label: "Assign to Paraplanner" },
-  { num: 9, key: "approval", label: "Approval" },
-  { num: 10, key: "export", label: "Export & WorkDrive" },
-  { num: 11, key: "complete", label: "Ceding Complete" },
+  { num: 3, key: "ai_extraction", label: "Extract & Fill Gaps" },
+  { num: 4, key: "call_assist", label: "Call Assist" },
+  { num: 5, key: "transcript", label: "Call Transcript" },
+  { num: 6, key: "audit_trail", label: "Audit Trail" },
+  { num: 7, key: "assign", label: "Assign to Paraplanner" },
+  { num: 8, key: "approval", label: "Approval" },
+  { num: 9, key: "export", label: "Export & WorkDrive" },
+  { num: 10, key: "complete", label: "Ceding Complete" },
 ] as const;
 
 export function generateCaseRef(planType: string) {
