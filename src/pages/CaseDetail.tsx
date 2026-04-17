@@ -108,80 +108,27 @@ const CaseDetail = () => {
         <ArrowLeft className="h-4 w-4" /> Back to cases
       </Link>
 
-      {/* Header */}
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4 pb-5 border-b border-border">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <span className={`inline-block h-3 w-3 rounded-full ${RAG_STYLES[rag].dot}`} />
-            <h1 className="text-2xl font-bold theme-heading text-foreground">{caseItem.client_name}</h1>
-            <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold ${STATUS_STYLES[caseItem.status] ?? ""}`}>
-              {STATUS_LABELS[caseItem.status] ?? caseItem.status}
-            </span>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            {caseItem.provider_name} · {caseItem.plan_type} · {caseItem.plan_number} ·{" "}
-            <span className="font-mono text-xs">{caseItem.case_ref}</span>
-          </p>
-        </div>
-      </div>
-
-      {/* Horizontal stepper */}
-      <div className="mb-6 rounded-lg border border-border bg-card p-4 overflow-x-auto">
-        <div className="flex items-start gap-1 min-w-[900px]">
-          {CEDING_STAGES.map((s, i) => {
-            const isDone = stagesCompleted.includes(s.num);
-            const isCurrent = currentStage === s.num;
-            return (
-              <button
-                key={s.num}
-                onClick={() => goToStage(s.num)}
-                className={`flex-1 group text-center px-2 py-2 rounded-md transition-colors ${
-                  isCurrent ? "bg-teal/10" : "hover:bg-muted/50"
-                }`}
-              >
-                <div className="flex items-center gap-1">
-                  <div
-                    className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-bold shrink-0 ${
-                      isDone
-                        ? "bg-success text-success-foreground"
-                        : isCurrent
-                        ? "bg-teal text-teal-foreground ring-2 ring-teal/30"
-                        : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {isDone ? <CheckCircle2 className="h-4 w-4" /> : s.num}
-                  </div>
-                  {i < CEDING_STAGES.length - 1 && (
-                    <div className={`flex-1 h-0.5 ${isDone ? "bg-success" : "bg-border"}`} />
-                  )}
-                </div>
-                <p
-                  className={`mt-2 text-[10px] font-semibold leading-tight ${
-                    isCurrent ? "text-foreground" : "text-muted-foreground"
-                  }`}
-                >
-                  {s.label}
-                </p>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-[260px,1fr]">
-        {/* Sidebar */}
-        <aside className="space-y-4">
-          <div className="theme-card border border-border bg-card">
-            <h3 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-3">Case info</h3>
-            <dl className="space-y-2.5 text-xs">
-              <Field label="Client" value={caseItem.client_name} />
-              <Field label="Provider" value={caseItem.provider_name} />
-              <Field label="Plan type" value={caseItem.plan_type} />
-              <Field label="Policy ref" value={caseItem.plan_number} mono />
-              <Field label="Case ref" value={caseItem.case_ref} mono />
-              <Field label="Owner" value={caseItem.owner_name ?? "—"} />
-              <Field label="Zoho task" value={(caseItem as any).zoho_task_id ?? "—"} mono />
-              <Field
+      {/* Header — consolidated case details */}
+      <div className="mb-6 rounded-lg border border-border bg-card p-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-3 mb-2 flex-wrap">
+              <span className={`inline-block h-3 w-3 rounded-full ${RAG_STYLES[rag].dot}`} />
+              <h1 className="text-2xl font-bold theme-heading text-foreground truncate">{caseItem.client_name}</h1>
+              <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold ${STATUS_STYLES[caseItem.status] ?? ""}`}>
+                {STATUS_LABELS[caseItem.status] ?? caseItem.status}
+              </span>
+              <span className="font-mono text-xs px-2 py-0.5 rounded bg-muted text-muted-foreground">
+                {caseItem.case_ref}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-2 text-xs mt-3">
+              <HeaderField label="Provider" value={caseItem.provider_name} />
+              <HeaderField label="Plan type" value={caseItem.plan_type} />
+              <HeaderField label="Policy ref" value={caseItem.plan_number} mono />
+              <HeaderField label="Owner" value={caseItem.owner_name ?? "—"} />
+              <HeaderField label="Zoho task" value={(caseItem as any).zoho_task_id ?? "—"} mono />
+              <HeaderField
                 label="Created"
                 value={new Date(caseItem.created_at).toLocaleDateString("en-GB", {
                   day: "2-digit",
@@ -189,12 +136,24 @@ const CaseDetail = () => {
                   year: "numeric",
                 })}
               />
-            </dl>
+              <HeaderField label="Stage" value={`${currentStage} of 11`} />
+              <HeaderField label="RAG" value={RAG_STYLES[rag].label} />
+            </div>
           </div>
+        </div>
+      </div>
 
-          <div className="theme-card border border-border bg-card">
-            <h3 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-3">Progress</h3>
-            <ol className="space-y-1.5">
+      <div className="grid gap-6 lg:grid-cols-[240px,1fr]">
+        {/* Sidebar — Progress sub-navigation under Cases */}
+        <aside>
+          <div className="theme-card border border-border bg-card sticky top-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Progress</h3>
+              <span className="text-[10px] text-muted-foreground">
+                {stagesCompleted.length}/11
+              </span>
+            </div>
+            <ol className="space-y-0.5">
               {CEDING_STAGES.map((s) => {
                 const isDone = stagesCompleted.includes(s.num);
                 const isCurrent = currentStage === s.num;
