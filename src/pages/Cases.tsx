@@ -1,214 +1,293 @@
-import { StatusChip, SectionHeader } from "@/components/shared/StatusComponents";
-import { Link } from "react-router-dom";
-import { useState } from "react";
-import { AlertTriangle, ArrowRight, Loader2 } from "lucide-react";
+import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  Search,
+  Plus,
+  Filter,
+  Sparkles,
+  Briefcase,
+  AlertTriangle,
+  Loader2,
+} from "lucide-react";
 import { getCases, createCase } from "@/services/api";
+import {
+  CASE_STATUSES,
+  PLAN_TYPES,
+  RAG_STYLES,
+  STATUS_LABELS,
+  STATUS_STYLES,
+  calculateRag,
+  generateCaseRef,
+} from "@/lib/caseHelpers";
+import { useRole } from "@/hooks/useRole";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
-const statusOrder = ['loa_sent', 'loa_processed', 'waiting_pdf', 'pdf_received', 'ceding_in_progress', 'complete'] as const;
-
-function generateCaseRef() {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let result = "CASE-";
-  for (let i = 0; i < 8; i++) result += chars.charAt(Math.floor(Math.random() * chars.length));
-  return result;
-}
+const ZOHO_SAMPLES = [
+  { client_name: "Eleanor Whitmore", provider_name: "Aviva", plan_number: "AV-PP-55021", plan_type: "Personal Pension" },
+  { client_name: "Tom Beckett", provider_name: "Royal London", plan_number: "RL-ISA-77103", plan_type: "ISA" },
+  { client_name: "Sophie Allen", provider_name: "Standard Life", plan_number: "SL-BND-22019", plan_type: "Bond" },
+];
 
 const Cases = () => {
-  const [filter, setFilter] = useState<string>('all');
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const { userName } = useRole();
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [planFilter, setPlanFilter] = useState<string>("all");
+  const [ragFilter, setRagFilter] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
-  const queryClient = useQueryClient();
-
-  const { data: cases = [], isLoading } = useQuery({
-    queryKey: ["cases"],
-    queryFn: getCases,
-  });
 
   const [form, setForm] = useState({
     client_name: "",
     provider_name: "",
-    plan_number: "",
     plan_type: "Personal Pension",
+    plan_number: "",
+    zoho_task_id: "",
+    case_notes: "",
   });
+
+  const { data: cases = [], isLoading } = useQuery({ queryKey: ["cases"], queryFn: getCases });
 
   const createMutation = useMutation({
     mutationFn: createCase,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["cases"] });
+    onSuccess: (newCase) => {
+      qc.invalidateQueries({ queryKey: ["cases"] });
       setDialogOpen(false);
-      setForm({ client_name: "", provider_name: "", plan_number: "", plan_type: "Personal Pension" });
-      toast({ title: "Case created", description: "New case has been added." });
+      setForm({ client_name: "", provider_name: "", plan_type: "Personal Pension", plan_number: "", zoho_task_id: "", case_notes: "" });
+      toast.success("Case created", { description: `${newCase.case_ref} — ${newCase.client_name}` });
+      navigate(`/cases/${newCase.id}`);
     },
-    onError: (err: Error) => {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
-    },
+    onError: (e: Error) => toast.error(e.message),
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.client_name || !form.provider_name || !form.plan_number) return;
+    if (!form.client_name || !form.provider_name || !form.plan_number) {
+      toast.error("Client, provider, and policy reference are required.");
+      return;
+    }
     createMutation.mutate({
-      case_ref: generateCaseRef(),
+      case_ref: generateCaseRef(form.plan_type),
       client_name: form.client_name,
       provider_name: form.provider_name,
       plan_number: form.plan_number,
       plan_type: form.plan_type,
-    });
+      status: "pending_loa",
+      owner_name: userName ?? null,
+      zoho_task_id: form.zoho_task_id || null,
+      case_notes: form.case_notes || null,
+      current_stage: 1,
+    } as any);
   };
 
-  const filtered = filter === 'all' ? cases : cases.filter(c => c.status === filter);
+  const simulateZoho = () => {
+    const sample = ZOHO_SAMPLES[Math.floor(Math.random() * ZOHO_SAMPLES.length)];
+    createMutation.mutate({
+      case_ref: generateCaseRef(sample.plan_type),
+      ...sample,
+      status: "pending_loa",
+      owner_name: userName ?? null,
+      zoho_task_id: `ZT-${Math.floor(Math.random() * 90000) + 10000}`,
+      case_notes: "Auto-imported from Zoho CRM blueprint task.",
+      current_stage: 1,
+    } as any);
+  };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return cases.filter((c) => {
+      if (statusFilter !== "all" && c.status !== statusFilter) return false;
+      if (planFilter !== "all" && c.plan_type !== planFilter) return false;
+      if (ragFilter !== "all" && calculateRag(c) !== ragFilter) return false;
+      if (q && !`${c.client_name} ${c.provider_name} ${c.plan_number} ${c.case_ref}`.toLowerCase().includes(q))
+        return false;
+      return true;
+    });
+  }, [cases, search, statusFilter, planFilter, ragFilter]);
 
   return (
     <div className="animate-slide-in">
-      <SectionHeader
-        title="Cases"
-        subtitle="LOA → Ceding Pipeline"
-        action={
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold theme-heading text-foreground flex items-center gap-2">
+            <Briefcase className="h-6 w-6 text-teal" /> Cases
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            All ceding cases assigned to you. {filtered.length} of {cases.length} shown.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={simulateZoho} disabled={createMutation.isPending} className="gap-2">
+            <Sparkles className="h-4 w-4 text-teal" /> Simulate Zoho Import
+          </Button>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <button className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors">
-                + New Case
-              </button>
+              <Button className="gap-2">
+                <Plus className="h-4 w-4" /> New Case
+              </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-lg">
               <DialogHeader>
-                <DialogTitle>Create New Case</DialogTitle>
+                <DialogTitle>Create new ceding case</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4 pt-2">
-                <div className="space-y-2">
-                  <Label htmlFor="client_name">Client Name</Label>
-                  <Input id="client_name" value={form.client_name} onChange={e => setForm(f => ({ ...f, client_name: e.target.value }))} placeholder="e.g. John Smith" required />
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="client_name">Client Name *</Label>
+                    <Input id="client_name" value={form.client_name} onChange={(e) => setForm((f) => ({ ...f, client_name: e.target.value }))} placeholder="e.g. James Richardson" required />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="provider_name">Provider *</Label>
+                    <Input id="provider_name" value={form.provider_name} onChange={(e) => setForm((f) => ({ ...f, provider_name: e.target.value }))} placeholder="e.g. Aviva" required />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="provider_name">Provider</Label>
-                  <Input id="provider_name" value={form.provider_name} onChange={e => setForm(f => ({ ...f, provider_name: e.target.value }))} placeholder="e.g. Aviva" required />
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="plan_type">Plan Type *</Label>
+                    <Select value={form.plan_type} onValueChange={(v) => setForm((f) => ({ ...f, plan_type: v }))}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PLAN_TYPES.map((t) => (
+                          <SelectItem key={t} value={t}>
+                            {t}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="plan_number">Policy Reference *</Label>
+                    <Input id="plan_number" value={form.plan_number} onChange={(e) => setForm((f) => ({ ...f, plan_number: e.target.value }))} placeholder="e.g. AV-SIPP-2847" required />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="plan_number">Plan Number</Label>
-                  <Input id="plan_number" value={form.plan_number} onChange={e => setForm(f => ({ ...f, plan_number: e.target.value }))} placeholder="e.g. TK12097279" required />
+                <div className="space-y-1.5">
+                  <Label htmlFor="zoho_task_id">Zoho CRM Task ID (optional)</Label>
+                  <Input id="zoho_task_id" value={form.zoho_task_id} onChange={(e) => setForm((f) => ({ ...f, zoho_task_id: e.target.value }))} placeholder="e.g. ZT-12345" />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="plan_type">Plan Type</Label>
-                  <Select value={form.plan_type} onValueChange={v => setForm(f => ({ ...f, plan_type: v }))}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Personal Pension">Personal Pension</SelectItem>
-                      <SelectItem value="Stakeholder Pension">Stakeholder Pension</SelectItem>
-                      <SelectItem value="SIPP">SIPP</SelectItem>
-                      <SelectItem value="With-Profits Pension">With-Profits Pension</SelectItem>
-                      <SelectItem value="Group Pension">Group Pension</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="space-y-1.5">
+                  <Label htmlFor="case_notes">Case notes (optional)</Label>
+                  <Textarea id="case_notes" value={form.case_notes} onChange={(e) => setForm((f) => ({ ...f, case_notes: e.target.value }))} rows={3} placeholder="Any context for the CA team…" />
                 </div>
-                <button
-                  type="submit"
-                  disabled={createMutation.isPending}
-                  className="w-full rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
-                >
-                  {createMutation.isPending ? "Creating…" : "Create Case"}
-                </button>
+                <Button type="submit" disabled={createMutation.isPending} className="w-full">
+                  {createMutation.isPending ? "Creating…" : "Create case"}
+                </Button>
               </form>
             </DialogContent>
           </Dialog>
-        }
-      />
-
-      {/* Filters */}
-      <div className="mb-6 flex flex-wrap gap-2">
-        <button
-          onClick={() => setFilter('all')}
-          className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${filter === 'all' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-border'}`}
-        >
-          All ({cases.length})
-        </button>
-        {statusOrder.map(s => {
-          const count = cases.filter(c => c.status === s).length;
-          if (count === 0) return null;
-          return (
-            <button
-              key={s}
-              onClick={() => setFilter(s)}
-              className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${filter === s ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-border'}`}
-            >
-              {s.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} ({count})
-            </button>
-          );
-        })}
+        </div>
       </div>
 
-      {/* Table */}
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className="mb-4 grid gap-3 md:grid-cols-[1fr,auto,auto,auto]">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by client, provider, policy ref…" className="pl-9" />
+        </div>
+        <FilterSelect value={statusFilter} onChange={setStatusFilter} placeholder="Status">
+          <SelectItem value="all">All statuses</SelectItem>
+          {CASE_STATUSES.map((s) => (
+            <SelectItem key={s} value={s}>
+              {STATUS_LABELS[s]}
+            </SelectItem>
+          ))}
+        </FilterSelect>
+        <FilterSelect value={planFilter} onChange={setPlanFilter} placeholder="Plan type">
+          <SelectItem value="all">All plan types</SelectItem>
+          {PLAN_TYPES.map((p) => (
+            <SelectItem key={p} value={p}>
+              {p}
+            </SelectItem>
+          ))}
+        </FilterSelect>
+        <FilterSelect value={ragFilter} onChange={setRagFilter} placeholder="RAG">
+          <SelectItem value="all">All RAG</SelectItem>
+          <SelectItem value="green">🟢 Green</SelectItem>
+          <SelectItem value="amber">🟡 Amber</SelectItem>
+          <SelectItem value="red">🔴 Red</SelectItem>
+        </FilterSelect>
+      </div>
+
+      <div className="rounded-lg border border-border bg-card overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-border bg-muted/50">
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Client</th>
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Provider</th>
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Plan Number</th>
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Value</th>
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Owner</th>
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Confidence</th>
-              <th className="px-4 py-3" />
+            <tr className="border-b border-border bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground">
+              <th className="px-4 py-3 text-left font-semibold w-8" />
+              <th className="px-4 py-3 text-left font-semibold">Client</th>
+              <th className="px-4 py-3 text-left font-semibold">Provider</th>
+              <th className="px-4 py-3 text-left font-semibold">Plan Type</th>
+              <th className="px-4 py-3 text-left font-semibold">Policy Ref</th>
+              <th className="px-4 py-3 text-left font-semibold">Status</th>
+              <th className="px-4 py-3 text-left font-semibold">Stage</th>
+              <th className="px-4 py-3 text-left font-semibold">Last updated</th>
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 ? (
+            {isLoading ? (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
-                  No cases found. Create one to get started.
+                <td colSpan={8} className="px-4 py-12 text-center">
+                  <Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" />
+                </td>
+              </tr>
+            ) : filtered.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="px-4 py-12 text-center text-sm text-muted-foreground">
+                  {cases.length === 0 ? (
+                    <>
+                      No ceding cases yet. Click <strong>+ New Case</strong> to get started, or load demo data from the dashboard.
+                    </>
+                  ) : (
+                    <>No cases match your filters.</>
+                  )}
                 </td>
               </tr>
             ) : (
-              filtered.map(c => (
-                <tr key={c.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
-                  <td className="px-4 py-3 font-medium text-foreground">
-                    <div className="flex items-center gap-2">
-                      {c.is_overdue && <AlertTriangle className="h-3.5 w-3.5 text-overdue" />}
-                      {c.client_name}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">{c.provider_name}</td>
-                  <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{c.plan_number}</td>
-                  <td className="px-4 py-3"><StatusChip status={c.status as any} /></td>
-                  <td className="px-4 py-3 text-muted-foreground">{c.current_value || '—'}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{c.owner_name || '—'}</td>
-                  <td className="px-4 py-3">
-                    {(c.confidence_score ?? 0) > 0 ? (
+              filtered.map((c) => {
+                const rag = calculateRag(c);
+                const ragStyle = RAG_STYLES[rag];
+                const statusStyle = STATUS_STYLES[c.status] ?? "bg-muted text-muted-foreground";
+                const lastUpdated = new Date(c.updated_at);
+                return (
+                  <tr
+                    key={c.id}
+                    onClick={() => navigate(`/cases/${c.id}`)}
+                    className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors cursor-pointer"
+                  >
+                    <td className="px-4 py-3">
+                      <span className={`inline-block h-2.5 w-2.5 rounded-full ${ragStyle.dot}`} title={`RAG: ${ragStyle.label}`} />
+                    </td>
+                    <td className="px-4 py-3 font-medium text-foreground">
                       <div className="flex items-center gap-2">
-                        <div className="h-1.5 w-16 rounded-full bg-muted overflow-hidden">
-                          <div
-                            className={`h-full rounded-full ${(c.confidence_score ?? 0) >= 80 ? 'bg-success' : (c.confidence_score ?? 0) >= 50 ? 'bg-warning' : 'bg-overdue'}`}
-                            style={{ width: `${c.confidence_score}%` }}
-                          />
-                        </div>
-                        <span className="text-xs text-muted-foreground">{c.confidence_score}%</span>
+                        {c.is_overdue && <AlertTriangle className="h-3.5 w-3.5 text-overdue" />}
+                        {c.client_name}
                       </div>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <Link to={`/cases/${c.id}`} className="text-primary hover:text-primary/80 transition-colors">
-                      <ArrowRight className="h-4 w-4" />
-                    </Link>
-                  </td>
-                </tr>
-              ))
+                      <p className="text-[11px] text-muted-foreground font-normal mt-0.5">{c.case_ref}</p>
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">{c.provider_name}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{c.plan_type}</td>
+                    <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{c.plan_number}</td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold ${statusStyle}`}>
+                        {STATUS_LABELS[c.status] ?? c.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground">
+                      Step {(c as any).current_stage ?? 1} / 10
+                    </td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground">
+                      {lastUpdated.toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
@@ -216,5 +295,27 @@ const Cases = () => {
     </div>
   );
 };
+
+function FilterSelect({
+  value,
+  onChange,
+  placeholder,
+  children,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger className="w-[170px]">
+        <Filter className="h-3.5 w-3.5 text-muted-foreground mr-1" />
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent>{children}</SelectContent>
+    </Select>
+  );
+}
 
 export default Cases;

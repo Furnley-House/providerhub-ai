@@ -1,172 +1,264 @@
-import { useParams, Link } from "react-router-dom";
-import { cases, cedingChecklist } from "@/data/seedData";
-import { StatusChip, ConfidenceBadge, SectionHeader } from "@/components/shared/StatusComponents";
-import { CheckCircle, Circle, Clock, Upload, Cpu, Mail, Phone, FileText, ArrowLeft } from "lucide-react";
-import { useState } from "react";
-
-const timelineSteps = (c: typeof cases[0]) => [
-  { key: 'loa', label: 'LOA Sent', date: c.loaSentDate, done: true, icon: FileText },
-  { key: 'proc', label: 'Processing Expected', date: c.processingExpected, done: ['loa_processed', 'waiting_pdf', 'pdf_received', 'ceding_in_progress', 'complete'].includes(c.status), icon: Clock },
-  { key: 'pdf_exp', label: 'Policy Info Expected', date: c.pdfExpectedDate, done: !!c.pdfReceivedDate, icon: Clock },
-  { key: 'pdf_recv', label: 'PDF Received', date: c.pdfReceivedDate, done: !!c.pdfReceivedDate, icon: Upload },
-  { key: 'ai', label: 'AI Extraction', date: c.aiExtractionDate, done: !!c.aiExtractionDate, icon: Cpu },
-  { key: 'ceding', label: 'Ceding Review & Submit', date: c.cedingCompleteDate, done: !!c.cedingCompleteDate, icon: CheckCircle },
-];
+import { useParams, useNavigate, Link } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { ArrowLeft, CheckCircle2, Circle, Loader2, ChevronRight, ChevronLeft } from "lucide-react";
+import { getCaseById, updateCase } from "@/services/api";
+import { CEDING_STAGES, STATUS_LABELS, STATUS_STYLES, RAG_STYLES, calculateRag } from "@/lib/caseHelpers";
+import { useRole } from "@/hooks/useRole";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import {
+  StageCaseDetails,
+  StageDocumentUpload,
+  StageAIExtraction,
+  StageMissingData,
+  StageCallAssist,
+  StageTranscript,
+  StageAuditTrail,
+  StageAssign,
+  StageApproval,
+  StageExport,
+} from "@/components/case/stages";
 
 const CaseDetail = () => {
   const { id } = useParams();
-  const caseItem = cases.find(c => c.id === id);
-  const [showEmailModal, setShowEmailModal] = useState(false);
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const { isCA } = useRole();
 
-  if (!caseItem) return <div className="p-8 text-center text-muted-foreground">Case not found</div>;
+  const { data: caseItem, isLoading } = useQuery({
+    queryKey: ["case", id],
+    queryFn: () => getCaseById(id!),
+    enabled: !!id,
+  });
 
-  const steps = timelineSteps(caseItem);
-  const checklist = caseItem.id === 'CASE-001' ? cedingChecklist : [];
-  const sections = [...new Set(checklist.map(f => f.section))];
+  const updateMutation = useMutation({
+    mutationFn: ({ updates }: { updates: any }) => updateCase(id!, updates),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["case", id] });
+      qc.invalidateQueries({ queryKey: ["cases"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!caseItem) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-muted-foreground mb-4">Case not found.</p>
+        <Link to="/cases" className="text-teal hover:underline text-sm">
+          ← Back to cases
+        </Link>
+      </div>
+    );
+  }
+
+  const currentStage: number = (caseItem as any).current_stage ?? 1;
+  const stagesCompleted: number[] = (caseItem as any).stages_completed ?? [];
+  const rag = calculateRag(caseItem as any);
+
+  const goToStage = (n: number) => {
+    if (n < 1 || n > 10) return;
+    updateMutation.mutate({ updates: { current_stage: n, last_activity_at: new Date().toISOString() } });
+  };
+
+  const completeAndNext = () => {
+    const newCompleted = Array.from(new Set([...stagesCompleted, currentStage])).sort((a, b) => a - b);
+    const next = Math.min(currentStage + 1, 10);
+    updateMutation.mutate({
+      updates: {
+        current_stage: next,
+        stages_completed: newCompleted,
+        last_activity_at: new Date().toISOString(),
+      },
+    });
+    toast.success(`Stage ${currentStage} complete`, { description: `Moved to step ${next}.` });
+  };
+
+  const StageComponent = [
+    StageCaseDetails,
+    StageDocumentUpload,
+    StageAIExtraction,
+    StageMissingData,
+    StageCallAssist,
+    StageTranscript,
+    StageAuditTrail,
+    StageAssign,
+    StageApproval,
+    StageExport,
+  ][currentStage - 1];
 
   return (
     <div className="animate-slide-in">
       <Link to="/cases" className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
-        <ArrowLeft className="h-4 w-4" /> Back to Cases
+        <ArrowLeft className="h-4 w-4" /> Back to cases
       </Link>
 
-      <SectionHeader
-        title={`${caseItem.clientName} — ${caseItem.provider}`}
-        subtitle={`${caseItem.planType} · ${caseItem.planNumber}`}
-        action={<StatusChip status={caseItem.status} />}
-      />
-
-      {/* Actions bar */}
-      <div className="mb-8 flex flex-wrap gap-2">
-        {[
-          { label: 'Upload Policy PDF', icon: Upload },
-          { label: 'Run AI Extraction', icon: Cpu },
-          { label: 'Generate Chase Email', icon: Mail, onClick: () => setShowEmailModal(true) },
-          { label: 'Generate Call Pack', icon: Phone },
-          { label: 'Mark Complete', icon: CheckCircle },
-        ].map(btn => (
-          <button
-            key={btn.label}
-            onClick={btn.onClick}
-            className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"
-          >
-            <btn.icon className="h-4 w-4 text-primary" />
-            {btn.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="grid gap-8 lg:grid-cols-3">
-        {/* Timeline */}
-        <div className="rounded-xl border border-border bg-card p-6">
-          <h2 className="mb-6 text-lg font-semibold text-foreground">Case Timeline</h2>
-          <div className="space-y-0">
-            {steps.map((step, i) => (
-              <div key={step.key} className="flex gap-3">
-                <div className="flex flex-col items-center">
-                  {step.done ? (
-                    <CheckCircle className="h-5 w-5 text-success shrink-0" />
-                  ) : (
-                    <Circle className="h-5 w-5 text-border shrink-0" />
-                  )}
-                  {i < steps.length - 1 && (
-                    <div className={`w-px flex-1 min-h-[32px] ${step.done ? 'bg-success' : 'bg-border'}`} />
-                  )}
-                </div>
-                <div className="pb-6">
-                  <p className={`text-sm font-medium ${step.done ? 'text-foreground' : 'text-muted-foreground'}`}>{step.label}</p>
-                  <p className="text-xs text-muted-foreground">{step.date || 'Pending'}</p>
-                </div>
-              </div>
-            ))}
+      {/* Header */}
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4 pb-5 border-b border-border">
+        <div>
+          <div className="flex items-center gap-3 mb-1">
+            <span className={`inline-block h-3 w-3 rounded-full ${RAG_STYLES[rag].dot}`} />
+            <h1 className="text-2xl font-bold theme-heading text-foreground">{caseItem.client_name}</h1>
+            <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold ${STATUS_STYLES[caseItem.status] ?? ""}`}>
+              {STATUS_LABELS[caseItem.status] ?? caseItem.status}
+            </span>
           </div>
-        </div>
-
-        {/* Checklist Preview or Case Info */}
-        <div className="lg:col-span-2">
-          {checklist.length > 0 ? (
-            <div className="rounded-xl border border-border bg-card p-6">
-              <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-foreground">Ceding Checklist</h2>
-                <Link to="/ceding" className="text-sm text-primary hover:underline">View full checklist →</Link>
-              </div>
-              <div className="mb-4 flex gap-4 text-xs text-muted-foreground">
-                <span className="text-success font-semibold">{checklist.filter(f => f.status === 'complete').length} Complete</span>
-                <span className="text-warning font-semibold">{checklist.filter(f => f.status === 'needs_review').length} Needs Review</span>
-                <span className="text-overdue font-semibold">{checklist.filter(f => f.status === 'missing').length} Missing</span>
-              </div>
-              <div className="space-y-6 max-h-[500px] overflow-y-auto scrollbar-thin pr-2">
-                {sections.map(section => (
-                  <div key={section}>
-                    <h3 className="mb-2 text-sm font-semibold text-foreground border-b border-border pb-1">{section}</h3>
-                    <div className="space-y-1.5">
-                      {checklist.filter(f => f.section === section).map(field => (
-                        <div key={field.id} className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-muted/30">
-                          <span className={`h-2 w-2 rounded-full shrink-0 ${field.status === 'complete' ? 'bg-success' : field.status === 'missing' ? 'bg-overdue' : 'bg-warning'}`} />
-                          <span className="text-sm text-muted-foreground w-48 shrink-0">{field.label}</span>
-                          <span className="text-sm text-foreground flex-1 truncate">{field.value || '—'}</span>
-                          {field.confidence && <ConfidenceBadge level={field.confidence} />}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="rounded-xl border border-border bg-card p-6">
-              <h2 className="mb-4 text-lg font-semibold text-foreground">Case Details</h2>
-              <div className="grid gap-4 sm:grid-cols-2">
-                {[
-                  ['Client', caseItem.clientName],
-                  ['Provider', caseItem.provider],
-                  ['Plan Number', caseItem.planNumber],
-                  ['Plan Type', caseItem.planType],
-                  ['Owner', caseItem.owner],
-                  ['LOA Sent', caseItem.loaSentDate],
-                  ['Current Value', caseItem.currentValue || 'Pending'],
-                  ['Transfer Value', caseItem.transferValue || 'Pending'],
-                ].map(([label, val]) => (
-                  <div key={label}>
-                    <p className="text-xs text-muted-foreground">{label}</p>
-                    <p className="text-sm font-medium text-foreground">{val}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          <p className="text-sm text-muted-foreground">
+            {caseItem.provider_name} · {caseItem.plan_type} · {caseItem.plan_number} ·{" "}
+            <span className="font-mono text-xs">{caseItem.case_ref}</span>
+          </p>
         </div>
       </div>
 
-      {/* Chase Email Modal */}
-      {showEmailModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40">
-          <div className="w-full max-w-lg rounded-xl border border-border bg-card p-6 shadow-xl">
-            <h3 className="mb-4 text-lg font-semibold text-foreground">Chase Email — {caseItem.provider}</h3>
-            <div className="rounded-lg border border-border bg-muted/30 p-4 text-sm text-foreground whitespace-pre-line mb-4">
-{`Dear ${caseItem.provider} Pensions Team,
-
-Re: ${caseItem.clientName} — Plan ${caseItem.planNumber}
-
-We wrote to you on ${caseItem.loaSentDate} enclosing a Letter of Authority for the above client.
-
-We have not yet received the policy information requested. Could you please provide this at your earliest convenience, or confirm when we can expect to receive it?
-
-If you require any further information from us, please do not hesitate to get in touch.
-
-Kind regards,
-Sarah Chen
-CA Team — ProviderHub`}
-            </div>
-            <div className="flex gap-2 justify-end">
-              <button onClick={() => setShowEmailModal(false)} className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted transition-colors">Cancel</button>
-              <button onClick={() => setShowEmailModal(false)} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors">Copy & Send</button>
-            </div>
-          </div>
+      {/* Horizontal stepper */}
+      <div className="mb-6 rounded-lg border border-border bg-card p-4 overflow-x-auto">
+        <div className="flex items-start gap-1 min-w-[900px]">
+          {CEDING_STAGES.map((s, i) => {
+            const isDone = stagesCompleted.includes(s.num);
+            const isCurrent = currentStage === s.num;
+            return (
+              <button
+                key={s.num}
+                onClick={() => goToStage(s.num)}
+                className={`flex-1 group text-center px-2 py-2 rounded-md transition-colors ${
+                  isCurrent ? "bg-teal/10" : "hover:bg-muted/50"
+                }`}
+              >
+                <div className="flex items-center gap-1">
+                  <div
+                    className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-bold shrink-0 ${
+                      isDone
+                        ? "bg-success text-success-foreground"
+                        : isCurrent
+                        ? "bg-teal text-teal-foreground ring-2 ring-teal/30"
+                        : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {isDone ? <CheckCircle2 className="h-4 w-4" /> : s.num}
+                  </div>
+                  {i < CEDING_STAGES.length - 1 && (
+                    <div className={`flex-1 h-0.5 ${isDone ? "bg-success" : "bg-border"}`} />
+                  )}
+                </div>
+                <p
+                  className={`mt-2 text-[10px] font-semibold leading-tight ${
+                    isCurrent ? "text-foreground" : "text-muted-foreground"
+                  }`}
+                >
+                  {s.label}
+                </p>
+              </button>
+            );
+          })}
         </div>
-      )}
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-[260px,1fr]">
+        {/* Sidebar */}
+        <aside className="space-y-4">
+          <div className="theme-card border border-border bg-card">
+            <h3 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-3">Case info</h3>
+            <dl className="space-y-2.5 text-xs">
+              <Field label="Client" value={caseItem.client_name} />
+              <Field label="Provider" value={caseItem.provider_name} />
+              <Field label="Plan type" value={caseItem.plan_type} />
+              <Field label="Policy ref" value={caseItem.plan_number} mono />
+              <Field label="Case ref" value={caseItem.case_ref} mono />
+              <Field label="Owner" value={caseItem.owner_name ?? "—"} />
+              <Field label="Zoho task" value={(caseItem as any).zoho_task_id ?? "—"} mono />
+              <Field
+                label="Created"
+                value={new Date(caseItem.created_at).toLocaleDateString("en-GB", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })}
+              />
+            </dl>
+          </div>
+
+          <div className="theme-card border border-border bg-card">
+            <h3 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-3">Progress</h3>
+            <ol className="space-y-1.5">
+              {CEDING_STAGES.map((s) => {
+                const isDone = stagesCompleted.includes(s.num);
+                const isCurrent = currentStage === s.num;
+                return (
+                  <li key={s.num}>
+                    <button
+                      onClick={() => goToStage(s.num)}
+                      className={`flex w-full items-center gap-2 text-left text-xs px-2 py-1.5 rounded-md transition-colors ${
+                        isCurrent ? "bg-teal/10 text-foreground font-semibold" : "hover:bg-muted/50 text-muted-foreground"
+                      }`}
+                    >
+                      {isDone ? (
+                        <CheckCircle2 className="h-3.5 w-3.5 text-success shrink-0" />
+                      ) : (
+                        <Circle className="h-3.5 w-3.5 text-border shrink-0" />
+                      )}
+                      <span className="flex-1 truncate">
+                        {s.num}. {s.label}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
+        </aside>
+
+        {/* Stage content */}
+        <main className="space-y-4">
+          <StageComponent caseItem={caseItem as any} />
+
+          {/* Stage navigation */}
+          <div className="flex items-center justify-between pt-4 border-t border-border">
+            <Button
+              variant="outline"
+              onClick={() => goToStage(currentStage - 1)}
+              disabled={currentStage <= 1}
+              className="gap-2"
+            >
+              <ChevronLeft className="h-4 w-4" /> Previous step
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              Step {currentStage} of 10 · {CEDING_STAGES[currentStage - 1].label}
+            </p>
+            {isCA && currentStage < 10 ? (
+              <Button onClick={completeAndNext} className="gap-2">
+                Mark complete & continue <ChevronRight className="h-4 w-4" />
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                onClick={() => goToStage(currentStage + 1)}
+                disabled={currentStage >= 10}
+                className="gap-2"
+              >
+                Next step <ChevronRight className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </main>
+      </div>
     </div>
   );
 };
+
+function Field({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+  return (
+    <div className="flex justify-between gap-2">
+      <dt className="text-muted-foreground shrink-0">{label}</dt>
+      <dd className={`text-foreground text-right truncate ${mono ? "font-mono" : ""}`}>{value}</dd>
+    </div>
+  );
+}
 
 export default CaseDetail;
