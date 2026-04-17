@@ -226,11 +226,15 @@ export type Database = {
           created_at: string
           evidence_ref: string | null
           evidence_source: string | null
+          extracted_at: string | null
+          field_key: string | null
           id: string
           label: string
+          manually_edited: boolean
           notes: string | null
           reviewed_by: string | null
           section: string
+          source_page: number | null
           status: string
           updated_at: string
           value: string | null
@@ -241,11 +245,15 @@ export type Database = {
           created_at?: string
           evidence_ref?: string | null
           evidence_source?: string | null
+          extracted_at?: string | null
+          field_key?: string | null
           id?: string
           label: string
+          manually_edited?: boolean
           notes?: string | null
           reviewed_by?: string | null
           section: string
+          source_page?: number | null
           status?: string
           updated_at?: string
           value?: string | null
@@ -256,11 +264,15 @@ export type Database = {
           created_at?: string
           evidence_ref?: string | null
           evidence_source?: string | null
+          extracted_at?: string | null
+          field_key?: string | null
           id?: string
           label?: string
+          manually_edited?: boolean
           notes?: string | null
           reviewed_by?: string | null
           section?: string
+          source_page?: number | null
           status?: string
           updated_at?: string
           value?: string | null
@@ -282,6 +294,8 @@ export type Database = {
           created_at: string
           document_type: string | null
           extracted_data: Json | null
+          extraction_error: string | null
+          extraction_status: string
           fields_extracted: number | null
           file_name: string
           file_path: string | null
@@ -297,6 +311,8 @@ export type Database = {
           created_at?: string
           document_type?: string | null
           extracted_data?: Json | null
+          extraction_error?: string | null
+          extraction_status?: string
           fields_extracted?: number | null
           file_name: string
           file_path?: string | null
@@ -312,6 +328,8 @@ export type Database = {
           created_at?: string
           document_type?: string | null
           extracted_data?: Json | null
+          extraction_error?: string | null
+          extraction_status?: string
           fields_extracted?: number | null
           file_name?: string
           file_path?: string | null
@@ -330,6 +348,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      field_audit: {
+        Row: {
+          action: string
+          actor_name: string | null
+          actor_role: string | null
+          case_id: string
+          confidence: string | null
+          created_at: string
+          field_key: string | null
+          field_label: string | null
+          id: string
+          new_value: string | null
+          notes: string | null
+          old_value: string | null
+          source: string
+        }
+        Insert: {
+          action: string
+          actor_name?: string | null
+          actor_role?: string | null
+          case_id: string
+          confidence?: string | null
+          created_at?: string
+          field_key?: string | null
+          field_label?: string | null
+          id?: string
+          new_value?: string | null
+          notes?: string | null
+          old_value?: string | null
+          source?: string
+        }
+        Update: {
+          action?: string
+          actor_name?: string | null
+          actor_role?: string | null
+          case_id?: string
+          confidence?: string | null
+          created_at?: string
+          field_key?: string | null
+          field_label?: string | null
+          id?: string
+          new_value?: string | null
+          notes?: string | null
+          old_value?: string | null
+          source?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {

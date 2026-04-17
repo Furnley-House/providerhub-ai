@@ -1,88 +1,42 @@
-import { useMemo, useState } from "react";
-import { CheckCircle2, AlertTriangle, CircleDashed, ListChecks, ThumbsUp, RotateCcw } from "lucide-react";
-import { ChecklistField, type ChecklistFieldState, type Confidence, type FieldStatus } from "./ChecklistField";
+import { useMemo } from "react";
+import { CheckCircle2, AlertTriangle, CircleDashed, ListChecks, ThumbsUp } from "lucide-react";
+import { ChecklistField, type ChecklistFieldState, type Confidence } from "./ChecklistField";
 import { getTemplate, groupBySection, type ChecklistFieldDef } from "@/lib/checklistTemplates";
 import { useRole } from "@/hooks/useRole";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useChecklistFields } from "@/hooks/useChecklistFields";
+import type { Tables } from "@/integrations/supabase/types";
+
+type ChecklistRow = Tables<"checklist_fields">;
 
 interface Props {
   planType: string;
   caseId: string;
+  /** When provided, fields render a 📄 button that calls back with source info */
+  onJumpToSource?: (sourcePage: number | null, fieldLabel: string, evidenceSource: string | null) => void;
 }
 
 /**
- * Generates per-case demo state for the checklist. In Phase 3 this will be
- * replaced with values pulled from the `checklist_fields` Supabase table,
- * populated by the AI extraction edge function.
+ * DB-backed checklist. Reads from `checklist_fields`, seeds from the plan-type
+ * template on first open, persists every edit and writes audit-log entries.
  */
-function seedFieldStates(template: ChecklistFieldDef[], caseId: string): Record<string, ChecklistFieldState> {
-  // Deterministic pseudo-random based on caseId char sum so each case looks consistent
-  const seed = Array.from(caseId).reduce((a, c) => a + c.charCodeAt(0), 0);
-  const out: Record<string, ChecklistFieldState> = {};
-  template.forEach((f, i) => {
-    const r = (seed + i * 17) % 10;
-    let confidence: Confidence;
-    let value: string | null;
-    if (r < 5) {
-      confidence = "HIGH";
-      value = sampleValue(f);
-    } else if (r < 7) {
-      confidence = "MEDIUM";
-      value = sampleValue(f);
-    } else if (r < 8) {
-      confidence = "LOW";
-      value = sampleValue(f);
-    } else {
-      confidence = "MISSING";
-      value = null;
-    }
-    out[f.key] = {
-      key: f.key,
-      value,
-      confidence,
-      status: confidence === "MISSING" ? "missing" : "pending",
-      evidenceSource: value ? `PDF: provider-pack.pdf, Page ${1 + (r % 6)}, Section: ${f.section}` : null,
-    };
-  });
-  return out;
-}
-
-function sampleValue(f: ChecklistFieldDef): string {
-  switch (f.type) {
-    case "currency":
-      return `£${(Math.random() * 100000 + 5000).toFixed(2)}`;
-    case "percent":
-      return `${(Math.random() * 2).toFixed(2)}%`;
-    case "yesno":
-      return Math.random() > 0.5 ? "Yes" : "No";
-    case "number":
-      return String(Math.floor(Math.random() * 100));
-    case "date":
-      return "2030-04-06";
-    case "select":
-      return f.options?.[0] ?? "";
-    default:
-      return "Sample value";
-  }
-}
-
-export function ChecklistPanel({ planType, caseId }: Props) {
+export function ChecklistPanel({ planType, caseId, onJumpToSource }: Props) {
   const template = useMemo(() => getTemplate(planType), [planType]);
-  const { canEditChecklist, canApprove, isCA, isAdmin, isAdviser, isParaplanner } = useRole();
-
-  const [states, setStates] = useState<Record<string, ChecklistFieldState>>(() =>
-    seedFieldStates(template, caseId),
-  );
+  const { canEditChecklist, canApprove, isAdviser } = useRole();
+  const { rows, byKey, loading, updateField, approveAllFilled } = useChecklistFields({
+    caseId,
+    template,
+  });
 
   const visibleFields = useMemo(
     () =>
       template.filter((f) => {
         if (!f.showIf) return true;
-        const dependent = states[f.showIf.key]?.value;
+        const dependent = byKey.get(f.showIf.key)?.value;
         return dependent ? f.showIf.in.includes(dependent) : false;
       }),
-    [template, states],
+    [template, byKey],
   );
 
   const grouped = useMemo(() => groupBySection(visibleFields), [visibleFields]);
@@ -90,34 +44,58 @@ export function ChecklistPanel({ planType, caseId }: Props) {
   const stats = useMemo(() => {
     const counts = { high: 0, medium: 0, low: 0, missing: 0, approved: 0, review: 0 };
     visibleFields.forEach((f) => {
-      const s = states[f.key];
-      if (!s) return;
-      if (s.confidence === "HIGH") counts.high++;
-      else if (s.confidence === "MEDIUM") counts.medium++;
-      else if (s.confidence === "LOW") counts.low++;
+      const r = byKey.get(f.key);
+      const conf = (r?.confidence ?? "MISSING").toUpperCase();
+      if (conf === "HIGH") counts.high++;
+      else if (conf === "MEDIUM") counts.medium++;
+      else if (conf === "LOW") counts.low++;
       else counts.missing++;
-      if (s.status === "approved") counts.approved++;
-      if (s.status === "review_requested") counts.review++;
+      if (r?.status === "approved") counts.approved++;
+      if (r?.status === "review_requested") counts.review++;
     });
     const total = visibleFields.length;
     const completion = total === 0 ? 0 : Math.round(((total - counts.missing) / total) * 100);
     return { ...counts, total, completion };
-  }, [visibleFields, states]);
+  }, [visibleFields, byKey]);
 
-  const updateField = (key: string, patch: Partial<ChecklistFieldState>) => {
-    setStates((s) => ({ ...s, [key]: { ...s[key], ...patch } }));
+  const stateForField = (f: ChecklistFieldDef): ChecklistFieldState => {
+    const r = byKey.get(f.key);
+    if (!r) {
+      return { key: f.key, value: null, confidence: "MISSING", status: "missing" };
+    }
+    return {
+      key: f.key,
+      value: r.value,
+      confidence: ((r.confidence ?? "MISSING").toUpperCase() as Confidence),
+      status: (r.status as ChecklistFieldState["status"]) ?? (r.value ? "pending" : "missing"),
+      evidenceSource: r.evidence_source
+        ? `${r.evidence_source}${r.evidence_ref ? ` · ${r.evidence_ref}` : ""}`
+        : r.evidence_ref ?? null,
+      evidenceRef: r.evidence_ref,
+      manuallyEditedBy: r.manually_edited ? "Manual edit" : null,
+      originalAiValue: null,
+      comment: r.notes,
+    };
   };
 
-  const approveAll = () => {
-    setStates((s) => {
-      const next = { ...s };
-      visibleFields.forEach((f) => {
-        if (next[f.key].confidence !== "MISSING") {
-          next[f.key] = { ...next[f.key], status: "approved" };
-        }
-      });
-      return next;
-    });
+  const handleFieldChange = async (
+    f: ChecklistFieldDef,
+    patch: Partial<ChecklistFieldState>,
+  ) => {
+    const dbPatch: Partial<ChecklistRow> = {};
+    if (patch.value !== undefined) dbPatch.value = patch.value;
+    if (patch.confidence !== undefined) dbPatch.confidence = patch.confidence;
+    if (patch.status !== undefined) dbPatch.status = patch.status;
+    if (patch.comment !== undefined) dbPatch.notes = patch.comment;
+    let action = "manual_edit";
+    if (patch.status === "approved") action = "approve";
+    else if (patch.status === "review_requested") action = "request_review";
+    else if (patch.comment !== undefined && patch.value === undefined) action = "comment";
+    await updateField(f.key, dbPatch, { action, notes: patch.comment ?? undefined });
+  };
+
+  const approveAll = async () => {
+    await approveAllFilled();
     toast.success("All filled fields approved", {
       description: "Missing fields skipped — please send those back to CA Team if needed.",
     });
@@ -137,7 +115,6 @@ export function ChecklistPanel({ planType, caseId }: Props) {
 
   return (
     <div className="space-y-4">
-      {/* Summary */}
       <div className="rounded-md border border-border bg-muted/30 p-4">
         <div className="flex items-center justify-between gap-4 mb-3">
           <h3 className="text-sm font-bold theme-heading text-foreground flex items-center gap-2">
@@ -147,10 +124,7 @@ export function ChecklistPanel({ planType, caseId }: Props) {
           <span className="text-xs font-semibold text-foreground">{stats.completion}% complete</span>
         </div>
         <div className="h-1.5 bg-background rounded overflow-hidden mb-3">
-          <div
-            className="h-full bg-teal transition-all"
-            style={{ width: `${stats.completion}%` }}
-          />
+          <div className="h-full bg-teal transition-all" style={{ width: `${stats.completion}%` }} />
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
           <SummaryChip icon={CheckCircle2} count={stats.high} label="High confidence" colour="success" />
@@ -160,21 +134,17 @@ export function ChecklistPanel({ planType, caseId }: Props) {
         </div>
       </div>
 
-      {/* Reviewer toolbar */}
       {canApprove && (
         <div className="flex items-center justify-between rounded-md border border-border bg-card p-3">
           <p className="text-xs text-muted-foreground">
             <strong className="text-foreground">{isAdviser ? "Adviser" : "Paraplanner"} review:</strong> approve each field, request review, or add comments.
           </p>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={approveAll} className="gap-1">
-              <ThumbsUp className="h-3.5 w-3.5" /> Approve all filled
-            </Button>
-          </div>
+          <Button variant="outline" size="sm" onClick={approveAll} className="gap-1">
+            <ThumbsUp className="h-3.5 w-3.5" /> Approve all filled
+          </Button>
         </div>
       )}
 
-      {/* CA toolbar */}
       {canEditChecklist && !canApprove && (
         <div className="flex items-center justify-between rounded-md border border-border bg-card p-3">
           <p className="text-xs text-muted-foreground">
@@ -186,30 +156,39 @@ export function ChecklistPanel({ planType, caseId }: Props) {
         </div>
       )}
 
-      {/* Sections */}
       <div className="space-y-4">
         {grouped.map(({ section, fields }) => (
           <div key={section} className="rounded-md border border-border bg-card">
             <div className="px-4 py-2 border-b border-border bg-muted/30">
-              <h4 className="text-[11px] uppercase tracking-widest font-bold text-muted-foreground">{section}</h4>
+              <h4 className="text-[11px] uppercase tracking-widest font-bold text-muted-foreground">
+                {section}
+              </h4>
             </div>
             <div className="p-3 grid gap-2 md:grid-cols-2">
-              {fields.map((f) => (
-                <ChecklistField
-                  key={f.key}
-                  def={f}
-                  state={states[f.key]}
-                  onChange={(patch) => updateField(f.key, patch)}
-                />
-              ))}
+              {fields.map((f) => {
+                const r = byKey.get(f.key);
+                return (
+                  <ChecklistField
+                    key={f.key}
+                    def={f}
+                    state={stateForField(f)}
+                    onChange={(patch) => handleFieldChange(f, patch)}
+                    onJumpToSource={
+                      onJumpToSource && r?.source_page
+                        ? () => onJumpToSource(r.source_page ?? null, f.label, r.evidence_source ?? null)
+                        : undefined
+                    }
+                  />
+                );
+              })}
             </div>
           </div>
         ))}
       </div>
 
-      <p className="text-[10px] text-muted-foreground text-center pt-2">
-        Demo data shown. Phase 3 will populate this checklist from the AI extraction pipeline and persist to the database.
-      </p>
+      {loading && (
+        <p className="text-[10px] text-muted-foreground text-center pt-2">Loading checklist…</p>
+      )}
     </div>
   );
 }
