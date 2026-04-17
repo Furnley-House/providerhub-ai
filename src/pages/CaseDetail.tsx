@@ -79,26 +79,26 @@ const CaseDetail = () => {
   const rag = calculateRag(caseItem as any);
 
   const goToStage = (n: number) => {
-    if (n < 1 || n > 11) return;
+    if (n < 1 || n > 10) return;
     updateMutation.mutate({ updates: { current_stage: n, last_activity_at: new Date().toISOString() } });
   };
 
   const completeAndNext = () => {
     const newCompleted = Array.from(new Set([...stagesCompleted, currentStage])).sort((a, b) => a - b);
-    const next = Math.min(currentStage + 1, 11);
+    const next = Math.min(currentStage + 1, 10);
     const updates: any = {
       current_stage: next,
       stages_completed: newCompleted,
       last_activity_at: new Date().toISOString(),
     };
-    // Stamp completion when crossing into Stage 11
-    if (currentStage === 10 && next === 11) {
+    // Stamp completion when crossing into Stage 10
+    if (currentStage === 9 && next === 10) {
       updates.status = "complete";
       updates.ceding_complete_date = new Date().toISOString().slice(0, 10);
     }
     updateMutation.mutate({ updates });
     toast.success(`Stage ${currentStage} complete`, {
-      description: next === 11 ? "Ceding complete!" : `Moved to step ${next}.`,
+      description: next === 10 ? "Ceding complete!" : `Moved to step ${next}.`,
     });
   };
 
@@ -106,7 +106,6 @@ const CaseDetail = () => {
     StageCaseDetails,
     StageDocumentUpload,
     StageAIExtraction,
-    StageMissingData,
     StageCallAssist,
     StageTranscript,
     StageAuditTrail,
