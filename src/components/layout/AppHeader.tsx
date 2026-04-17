@@ -1,4 +1,4 @@
-import { Search, Bell, ChevronDown, LogOut, RefreshCw, Settings, BarChart3 } from "lucide-react";
+import { Search, ChevronDown, LogOut, RefreshCw, Settings, BarChart3 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -12,6 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { NotificationBell } from "./NotificationBell";
 import logo from "@/assets/logo-dark.png";
 
 export function AppHeader() {
@@ -123,10 +124,7 @@ export function AppHeader() {
           </div>
         </div>
 
-        <button className="relative p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors rounded-md">
-          <Bell className="h-5 w-5" />
-          <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-overdue" />
-        </button>
+        <NotificationBell />
 
         <DropdownMenu>
           <DropdownMenuTrigger className="flex items-center gap-3 px-3 py-1.5 rounded-md hover:bg-muted transition-colors">
