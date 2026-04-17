@@ -43,12 +43,12 @@ export function ExportWorkspace({ caseItem }: Props) {
   const [workdriveLink, setWorkdriveLink] = useState<string | null>(null);
 
   const stats = useMemo(() => {
-    const total = template.fields.length;
+    const total = template.length;
     const byKey = new Map(fields.map((f) => [f.field_key, f]));
     let approved = 0;
     let missing = 0;
     let pending = 0;
-    template.fields.forEach((tf) => {
+    template.forEach((tf) => {
       const row = byKey.get(tf.key);
       if (!row || row.status === "missing" || !row.value) missing += 1;
       else if (row.status === "approved") approved += 1;
@@ -105,7 +105,7 @@ export function ExportWorkspace({ caseItem }: Props) {
       ["Approved", stats.approved],
       ["Pending", stats.pending],
       ["Missing", stats.missing],
-      ["Exported by", activeProfile?.full_name ?? "Unknown"],
+      ["Exported by", userName ?? "Unknown"],
       ["Exported at", new Date().toLocaleString("en-GB")],
     ];
 
@@ -171,8 +171,8 @@ export function ExportWorkspace({ caseItem }: Props) {
       case_id: caseItem.id,
       action,
       source: "export",
-      actor_name: activeProfile?.full_name ?? "Unknown",
-      actor_role: activeProfile?.role ?? null,
+      actor_name: userName ?? "Unknown",
+      actor_role: role ?? null,
       notes,
     });
   };
@@ -210,8 +210,8 @@ export function ExportWorkspace({ caseItem }: Props) {
         body: `${caseItem.client_name} (${caseItem.case_ref}) — checklist + audit trail uploaded.`,
         link: `/cases/${caseItem.id}?stage=10`,
         case_id: caseItem.id,
-        actor_name: activeProfile?.full_name ?? null,
-        actor_role: activeProfile?.role ?? null,
+        actor_name: userName ?? null,
+        actor_role: role ?? null,
       });
       toast.success("Uploaded to WorkDrive", { description: "CA team notified" });
     } catch (err) {
