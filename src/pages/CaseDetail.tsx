@@ -178,13 +178,20 @@ const CaseDetail = () => {
             {CEDING_STAGES.map((s, i) => {
               const isDone = stagesCompleted.includes(s.num);
               const isCurrent = currentStage === s.num;
+              const maxReachable = Math.max(
+                currentStage,
+                Math.min(9, (stagesCompleted.length > 0 ? Math.max(...stagesCompleted) : 0) + 1),
+              );
+              const isLocked = s.num > maxReachable;
               return (
                 <button
                   key={s.num}
                   onClick={() => goToStage(s.num)}
+                  disabled={isLocked}
                   className={`flex-1 group text-center px-2 py-1.5 rounded-md transition-colors ${
                     isCurrent ? "bg-teal/10" : "hover:bg-muted/50"
-                  }`}
+                  } ${isLocked ? "opacity-50 cursor-not-allowed hover:bg-transparent" : ""}`}
+                  title={isLocked ? "Complete previous steps first" : s.label}
                 >
                   <div className="flex items-center gap-1">
                     <div
@@ -247,18 +254,18 @@ const CaseDetail = () => {
               <ChevronLeft className="h-4 w-4" /> Previous step
             </Button>
             <p className="text-xs text-muted-foreground">
-              Step {currentStage} of 10 · {CEDING_STAGES[currentStage - 1].label}
+              Step {currentStage} of 9 · {CEDING_STAGES[currentStage - 1].label}
             </p>
-            {isCA && currentStage < 10 ? (
+            {isCA && currentStage < 9 ? (
               <Button onClick={completeAndNext} className="gap-2" disabled={!planSupported}>
-                {currentStage === 9 ? "Mark ceding complete" : "Mark complete & continue"}
+                {currentStage === 8 ? "Mark ceding complete" : "Mark complete & continue"}
                 <ChevronRight className="h-4 w-4" />
               </Button>
             ) : (
               <Button
                 variant="outline"
                 onClick={() => goToStage(currentStage + 1)}
-                disabled={currentStage >= 10 || !planSupported}
+                disabled={currentStage >= 9 || !planSupported}
                 className="gap-2"
               >
                 Next step <ChevronRight className="h-4 w-4" />
