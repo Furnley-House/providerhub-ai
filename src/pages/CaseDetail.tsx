@@ -1,9 +1,10 @@
 import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, CheckCircle2, Loader2, ChevronRight, ChevronLeft } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Loader2, ChevronRight, ChevronLeft, AlertTriangle } from "lucide-react";
 import { getCaseById, updateCase } from "@/services/api";
 import { CEDING_STAGES, STATUS_LABELS, STATUS_STYLES, RAG_STYLES, calculateRag } from "@/lib/caseHelpers";
+import { isSupportedPlanType, SUPPORTED_PLAN_TYPES } from "@/lib/checklistTemplates";
 import { useRole } from "@/hooks/useRole";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -76,9 +77,16 @@ const CaseDetail = () => {
   const currentStage: number = (caseItem as any).current_stage ?? 1;
   const stagesCompleted: number[] = (caseItem as any).stages_completed ?? [];
   const rag = calculateRag(caseItem as any);
+  const planSupported = isSupportedPlanType(caseItem.plan_type);
 
   const goToStage = (n: number) => {
     if (n < 1 || n > 10) return;
+    if (!planSupported && n > 1) {
+      toast.error("Plan type out of scope", {
+        description: `${caseItem.plan_type} is not currently supported. Only ${SUPPORTED_PLAN_TYPES.join(", ")} can be processed.`,
+      });
+      return;
+    }
     updateMutation.mutate({ updates: { current_stage: n, last_activity_at: new Date().toISOString() } });
   };
 
@@ -204,7 +212,22 @@ const CaseDetail = () => {
       <div>
         {/* Stage content */}
         <main className="space-y-4">
-          <StageComponent caseItem={caseItem as any} />
+          {!planSupported && (
+            <div className="rounded-lg border-2 border-overdue bg-overdue/10 p-4 flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-overdue shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="text-sm font-bold text-overdue theme-heading">
+                  Plan type out of scope — case flagged
+                </h3>
+                <p className="text-xs text-foreground mt-1">
+                  This case has plan type <strong>{caseItem.plan_type}</strong>, which is not currently
+                  supported. Only <strong>{SUPPORTED_PLAN_TYPES.join(", ")}</strong> can be processed
+                  end-to-end. Please reassign or close this case — progression beyond Stage 1 is blocked.
+                </p>
+              </div>
+            </div>
+          )}
+          {planSupported && <StageComponent caseItem={caseItem as any} />}
 
           {/* Stage navigation */}
           <div className="flex items-center justify-between pt-4 border-t border-border">
@@ -220,7 +243,7 @@ const CaseDetail = () => {
               Step {currentStage} of 10 · {CEDING_STAGES[currentStage - 1].label}
             </p>
             {isCA && currentStage < 10 ? (
-              <Button onClick={completeAndNext} className="gap-2">
+              <Button onClick={completeAndNext} className="gap-2" disabled={!planSupported}>
                 {currentStage === 9 ? "Mark ceding complete" : "Mark complete & continue"}
                 <ChevronRight className="h-4 w-4" />
               </Button>
@@ -228,7 +251,7 @@ const CaseDetail = () => {
               <Button
                 variant="outline"
                 onClick={() => goToStage(currentStage + 1)}
-                disabled={currentStage >= 10}
+                disabled={currentStage >= 10 || !planSupported}
                 className="gap-2"
               >
                 Next step <ChevronRight className="h-4 w-4" />

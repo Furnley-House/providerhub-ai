@@ -1,5 +1,6 @@
-// Checklist field templates per plan type — sourced from the Furnley House
-// Ceding Checklist v4 spreadsheet. Each plan type only renders its relevant fields.
+// Checklist field templates per plan type — sourced from Furnley House
+// Ceding Checklist v5 (Pension / ISA / GIA only). Other plan types are
+// out-of-scope and blocked at the case detail page.
 
 export type FieldType = "text" | "number" | "currency" | "percent" | "yesno" | "date" | "select";
 
@@ -15,151 +16,208 @@ export interface ChecklistFieldDef {
   hint?: string;
 }
 
-const COMMON_NOTES: ChecklistFieldDef = {
-  key: "notes",
-  label: "Notes",
+/** Plan types we currently support end-to-end. Anything else is flagged. */
+export const SUPPORTED_PLAN_TYPES = ["Personal Pension", "ISA", "GIA"] as const;
+export type SupportedPlanType = (typeof SUPPORTED_PLAN_TYPES)[number];
+
+export function isSupportedPlanType(planType: string | null | undefined): planType is SupportedPlanType {
+  return !!planType && (SUPPORTED_PLAN_TYPES as readonly string[]).includes(planType);
+}
+
+const NOTES_FIELD: ChecklistFieldDef = {
+  key: "other_notes",
+  label: "Other Notes",
   type: "text",
   section: "Notes",
 };
 
+// ────────────────────────────────────────────────────────────
+// Pension (Personal Pension / SIPP / Workplace etc.)
+// ────────────────────────────────────────────────────────────
+const PENSION_FIELDS: ChecklistFieldDef[] = [
+  // Basic Details
+  { key: "provider_name", label: "Provider Name", type: "text", section: "Basic Details", required: true },
+  { key: "provider_contact", label: "Provider Telephone & Email", type: "text", section: "Basic Details" },
+  { key: "plan_number", label: "Plan Number", type: "text", section: "Basic Details", required: true },
+  { key: "pension_type", label: "Type of Pension (Personal Pension / SIPP / Other)", type: "text", section: "Basic Details", required: true },
+  { key: "scheme_name", label: "Name of Policy / Scheme", type: "text", section: "Basic Details" },
+  { key: "contract_or_trust", label: "Contract or Trust based?", type: "select", section: "Basic Details", options: ["Contract", "Trust"] },
+  { key: "status", label: "Status (Inforce-Active / Paid up)", type: "select", section: "Basic Details", options: ["Inforce - Active", "Paid up"] },
+  { key: "start_date", label: "Start Date", type: "date", section: "Basic Details" },
+  { key: "nrd_age", label: "Normal Retirement Date / Age (Protected Retirement Age)", type: "text", section: "Basic Details", hint: "What age can client access benefits?" },
+  { key: "inherited_pension", label: "Inherited Pension? (If yes, all/part? Taxable?)", type: "text", section: "Basic Details", hint: "If yes — notify PP/ADV immediately" },
+
+  // Transaction History
+  { key: "ongoing_personal_contrib", label: "Ongoing Regular Contributions — Personal (GROSS or NET)", type: "text", section: "Transaction History" },
+  { key: "ongoing_employee_contrib", label: "Ongoing Regular Contributions — Employee", type: "text", section: "Transaction History" },
+  { key: "ongoing_employer_contrib", label: "Ongoing Regular Contributions — Employer", type: "text", section: "Transaction History" },
+  { key: "withdrawals", label: "Withdrawals (Regular / Lumpsum / Ongoing amount)", type: "text", section: "Transaction History" },
+  { key: "pct_crystallised", label: "% Crystallised", type: "percent", section: "Transaction History" },
+  { key: "tfc_taken", label: "Tax-free cash taken (£ and %)", type: "text", section: "Transaction History" },
+  { key: "contrib_25_26", label: "Contributions 06/04/2025 – 05/04/2026 (Personal / Employer)", type: "text", section: "Transaction History" },
+  { key: "contrib_24_25", label: "Contributions 06/04/2024 – 05/04/2025 (Personal / Employer)", type: "text", section: "Transaction History" },
+  { key: "contrib_23_24", label: "Contributions 06/04/2023 – 05/04/2024 (Personal / Employer)", type: "text", section: "Transaction History" },
+  { key: "contrib_22_23", label: "Contributions 06/04/2022 – 05/04/2023 (Personal / Employer)", type: "text", section: "Transaction History" },
+
+  // Valuation & Fund Details
+  { key: "current_value", label: "Current Value (with date)", type: "currency", section: "Valuation & Fund Details", required: true },
+  { key: "transfer_value", label: "Transfer Value (and any bonuses if higher)", type: "currency", section: "Valuation & Fund Details" },
+  { key: "loyalty_bonuses", label: "Loyalty / Other bonuses applied?", type: "text", section: "Valuation & Fund Details" },
+  { key: "crystallised_uncrystallised", label: "Crystallised & Uncrystallised split", type: "text", section: "Valuation & Fund Details" },
+  { key: "fund_details", label: "Fund Details (Name / ISIN / Units / Price / Value / Charge)", type: "text", section: "Valuation & Fund Details" },
+  { key: "fund_range_link", label: "Range of funds available (link)", type: "text", section: "Valuation & Fund Details" },
+  { key: "restricted_funds", label: "Any funds restricted for trading? Details", type: "text", section: "Valuation & Fund Details" },
+
+  // With-Profit (only if invested in WP)
+  { key: "wp_fund_isin", label: "With-Profit Fund Name & ISIN", type: "text", section: "With-Profit Funds" },
+  { key: "wp_guaranteed_growth", label: "Guaranteed Growth Rate", type: "percent", section: "With-Profit Funds" },
+  { key: "wp_ppfm", label: "PPFM", type: "text", section: "With-Profit Funds" },
+  { key: "wp_historical_bonus", label: "Historical Bonus Rate", type: "text", section: "With-Profit Funds" },
+  { key: "wp_mvr", label: "Market Value Reduction (MVR)", type: "text", section: "With-Profit Funds" },
+  { key: "wp_terminal_bonus", label: "Terminal Bonus", type: "text", section: "With-Profit Funds" },
+
+  // Charges
+  { key: "platform_charge", label: "Platform Charge / Plan Charges", type: "percent", section: "Charges" },
+  { key: "wrapper_charges", label: "Wrapper Charges", type: "percent", section: "Charges" },
+  { key: "fund_charges_avg", label: "Fund Charges (Weighted Average)", type: "percent", section: "Charges" },
+  { key: "transactional_fund_charge", label: "Transactional Fund Charge", type: "percent", section: "Charges" },
+  { key: "advice_charges", label: "Advice Charges", type: "percent", section: "Charges" },
+  { key: "exit_penalty", label: "Exit Charge / Penalty on Transfer", type: "text", section: "Charges" },
+  { key: "discount_on_charges", label: "Discount on charges? Details", type: "text", section: "Charges" },
+  { key: "other_charges", label: "Other charges (switch, bid/offer spread)", type: "text", section: "Charges" },
+
+  // Guarantees
+  { key: "gmp", label: "Guaranteed Minimum Pension (GMP)", type: "text", section: "Guarantees" },
+  { key: "gar", label: "Guaranteed Annuity Rate (GAR)", type: "text", section: "Guarantees" },
+  { key: "guaranteed_income", label: "Guaranteed Income", type: "text", section: "Guarantees" },
+  { key: "guaranteed_capital", label: "Guaranteed Capital Value", type: "text", section: "Guarantees" },
+  { key: "other_guarantees", label: "Other Guarantees", type: "text", section: "Guarantees" },
+  { key: "protected_tfc", label: "Protected Tax-Free Cash", type: "text", section: "Guarantees" },
+  { key: "waiver_of_premium", label: "Waiver of Premiums / Contributions", type: "yesno", section: "Guarantees" },
+  { key: "additional_life_cover", label: "Additional Life Cover", type: "yesno", section: "Guarantees" },
+
+  // A-Day (pre-06/04/2006 only)
+  { key: "a_day_value", label: "A-Day Value", type: "currency", section: "A-Day (pre 06/04/2006 only)" },
+  { key: "a_day_tfc", label: "A-Day Tax-Free Cash", type: "currency", section: "A-Day (pre 06/04/2006 only)" },
+  { key: "current_basis_tfc", label: "Tax-Free Cash on Current Basis", type: "currency", section: "A-Day (pre 06/04/2006 only)" },
+
+  // Benefits & Options
+  { key: "drawdown_available", label: "Is drawdown facility available?", type: "yesno", section: "Benefits & Options" },
+  { key: "drawdown_options", label: "Drawdown Options (FAD / UFPLS / Annuity in-house / Annuity OMO)", type: "text", section: "Benefits & Options" },
+  { key: "fad_internal_transfer", label: "If FAD not available — can plan transfer internally to access it?", type: "yesno", section: "Benefits & Options" },
+  { key: "origo_or_discharge", label: "Origo Option available OR Discharge forms required?", type: "text", section: "Benefits & Options" },
+  { key: "partial_transfer", label: "Partial Transfer available? Min residual?", type: "text", section: "Benefits & Options" },
+  { key: "lifestyling", label: "Lifestyling — available & active?", type: "text", section: "Benefits & Options" },
+  { key: "death_benefits", label: "Death Benefits (Fund value payout / Beneficiary drawdown)", type: "text", section: "Benefits & Options" },
+  { key: "benefits_before_75", label: "Must client take benefits before age 75?", type: "yesno", section: "Benefits & Options" },
+  { key: "former_protected_rights", label: "Former Protected Rights? Value if yes", type: "text", section: "Benefits & Options" },
+  { key: "pension_orders", label: "Pension sharing order / earmarking / bankruptcy?", type: "text", section: "Benefits & Options", hint: "If yes — notify PP/ADV immediately" },
+  { key: "transfers_in", label: "Can external plans be transferred in?", type: "yesno", section: "Benefits & Options" },
+  { key: "named_beneficiaries", label: "Named beneficiaries & % split", type: "text", section: "Benefits & Options" },
+  { key: "in_specie_transfers", label: "Are in-specie transfers available if transferring away?", type: "yesno", section: "Benefits & Options" },
+
+  NOTES_FIELD,
+];
+
+// ────────────────────────────────────────────────────────────
+// ISA
+// ────────────────────────────────────────────────────────────
+const ISA_FIELDS: ChecklistFieldDef[] = [
+  { key: "provider_name", label: "Provider Name", type: "text", section: "Basic Details", required: true },
+  { key: "provider_contact", label: "Provider Telephone & Email", type: "text", section: "Basic Details" },
+  { key: "plan_number", label: "Plan Number", type: "text", section: "Basic Details", required: true },
+  { key: "isa_type", label: "Type of ISA", type: "select", section: "Basic Details", options: ["Stocks & Shares", "Cash", "Lifetime"], required: true },
+  { key: "start_date", label: "Start Date", type: "date", section: "Basic Details" },
+  { key: "flexible_isa", label: "Is this a 'Flexible ISA'?", type: "yesno", section: "Basic Details" },
+
+  { key: "total_investment", label: "Total Investment", type: "currency", section: "Transaction History" },
+  { key: "ongoing_contributions", label: "Ongoing Regular Contributions", type: "text", section: "Transaction History" },
+  { key: "current_year_subs", label: "Current Year Subscriptions (Allowance used this tax year)", type: "currency", section: "Transaction History" },
+  { key: "withdrawals", label: "Withdrawals (Regular / Lumpsum / Ongoing amount)", type: "text", section: "Transaction History" },
+
+  { key: "current_value", label: "Current Value (with date)", type: "currency", section: "Valuation & Fund Details", required: true },
+  { key: "transfer_value", label: "Transfer Value (if higher than CV, disclose why)", type: "currency", section: "Valuation & Fund Details" },
+  { key: "fund_details", label: "Fund Details (Name / ISIN / Units / Price / Value / Charge)", type: "text", section: "Valuation & Fund Details" },
+  { key: "fund_range_link", label: "Range of funds available (link)", type: "text", section: "Valuation & Fund Details" },
+  { key: "restricted_funds", label: "Any funds restricted for trading? Details", type: "text", section: "Valuation & Fund Details" },
+
+  { key: "wp_fund_isin", label: "With-Profit Fund Name & ISIN", type: "text", section: "With-Profit Funds" },
+  { key: "wp_ppfm", label: "PPFM", type: "text", section: "With-Profit Funds" },
+  { key: "wp_historical_bonus", label: "Historical Bonus Rate", type: "text", section: "With-Profit Funds" },
+  { key: "wp_mvr", label: "Market Value Reduction (MVR)", type: "text", section: "With-Profit Funds" },
+
+  { key: "platform_charge", label: "Platform Charge", type: "percent", section: "Charges" },
+  { key: "fund_charges_avg", label: "Fund Charges (Weighted Average)", type: "percent", section: "Charges" },
+  { key: "transactional_fund_charge", label: "Transactional Fund Charge", type: "percent", section: "Charges" },
+  { key: "advice_charges", label: "Advice Charges", type: "percent", section: "Charges" },
+  { key: "exit_penalty", label: "Exit Charge / Penalty on Transfer", type: "text", section: "Charges" },
+  { key: "other_charges", label: "Other charges (switch, bid/offer spread)", type: "text", section: "Charges" },
+
+  { key: "guarantees", label: "Any Guarantees applicable", type: "text", section: "Guarantees" },
+
+  { key: "origo_available", label: "Origo Option available", type: "yesno", section: "Benefits & Options" },
+  { key: "discharge_forms", label: "Discharge forms required", type: "text", section: "Benefits & Options" },
+  { key: "transfer_systems", label: "Transfer systems used", type: "text", section: "Benefits & Options" },
+  { key: "isa_aps_transfer", label: "ISA APS transfer for spouse beneficiary allowed?", type: "yesno", section: "Benefits & Options" },
+  { key: "in_specie_transfers", label: "Are in-specie transfers available if transferring away?", type: "yesno", section: "Benefits & Options" },
+
+  NOTES_FIELD,
+];
+
+// ────────────────────────────────────────────────────────────
+// GIA
+// ────────────────────────────────────────────────────────────
+const GIA_FIELDS: ChecklistFieldDef[] = [
+  { key: "single_or_joint", label: "Single or Joint client", type: "select", section: "Basic Details", options: ["Single", "Joint"], required: true },
+  { key: "provider_name", label: "Provider Name", type: "text", section: "Basic Details", required: true },
+  { key: "provider_contact", label: "Provider Telephone & Email", type: "text", section: "Basic Details" },
+  { key: "plan_number", label: "Plan Number", type: "text", section: "Basic Details", required: true },
+  { key: "start_date", label: "Start Date", type: "date", section: "Basic Details" },
+
+  { key: "total_contributions", label: "Total Contributions", type: "currency", section: "Transaction History" },
+  { key: "ongoing_contributions", label: "Ongoing Regular Contributions", type: "text", section: "Transaction History" },
+  { key: "withdrawals", label: "Withdrawals", type: "text", section: "Transaction History" },
+  { key: "contributions_this_tax_year", label: "Contributions made this tax year", type: "currency", section: "Transaction History" },
+  { key: "gain_loss_pct", label: "Gain / Loss % currently on plan", type: "percent", section: "Transaction History" },
+
+  { key: "current_value", label: "Current Value (with date)", type: "currency", section: "Valuation & Fund Details", required: true },
+  { key: "transfer_value", label: "Transfer Value", type: "currency", section: "Valuation & Fund Details" },
+  { key: "transfer_value_reason", label: "Reason if transfer value differs from current value", type: "text", section: "Valuation & Fund Details" },
+  { key: "fund_details", label: "Fund Details (Name / ISIN / Units / Price / Value / Charge)", type: "text", section: "Valuation & Fund Details" },
+  { key: "fund_range_link", label: "Range of funds available (link)", type: "text", section: "Valuation & Fund Details" },
+  { key: "restricted_funds", label: "Any funds restricted for trading? Details", type: "text", section: "Valuation & Fund Details" },
+
+  { key: "wp_fund_isin", label: "With-Profit Fund Name & ISIN", type: "text", section: "With-Profit Funds" },
+  { key: "wp_ppfm", label: "PPFM", type: "text", section: "With-Profit Funds" },
+  { key: "wp_historical_bonus", label: "Historical Bonus Rate", type: "text", section: "With-Profit Funds" },
+  { key: "wp_mvr", label: "Market Value Reduction (MVR)", type: "text", section: "With-Profit Funds" },
+
+  { key: "platform_wrapper_charge", label: "Platform Charge / Wrapper Charge", type: "percent", section: "Charges" },
+  { key: "fund_charges_avg", label: "Fund Charges (Weighted Average) + Base cost of funds", type: "percent", section: "Charges" },
+  { key: "transactional_fund_charge", label: "Transactional Fund Charge", type: "percent", section: "Charges" },
+  { key: "advice_charges", label: "Advice Charges", type: "percent", section: "Charges" },
+  { key: "exit_penalty", label: "Exit Charge / Penalty on Transfer", type: "text", section: "Charges" },
+  { key: "setup_fees_adviser", label: "Setup fees paid to adviser (offset against CGT)", type: "currency", section: "Charges" },
+  { key: "other_charges", label: "Other charges (switch, bid/offer spread)", type: "text", section: "Charges" },
+
+  { key: "guarantees", label: "Any Guarantees applicable", type: "text", section: "Guarantees" },
+
+  { key: "origo_available", label: "Origo Option available", type: "yesno", section: "Benefits & Options" },
+  { key: "discharge_forms", label: "Discharge forms required", type: "text", section: "Benefits & Options" },
+  { key: "cgt_gain_report", label: "Unrealised & Realised gain report provided (for CGT)", type: "yesno", section: "Benefits & Options" },
+  { key: "in_specie_transfers", label: "Are in-specie transfers available if transferring away?", type: "yesno", section: "Benefits & Options" },
+
+  NOTES_FIELD,
+];
+
 export const CHECKLIST_TEMPLATES: Record<string, ChecklistFieldDef[]> = {
-  ISA: [
-    { key: "isa_type", label: "ISA Type", type: "select", section: "Plan Details", options: ["Stocks & Shares", "Cash"], required: true },
-    { key: "current_provider", label: "Current Provider", type: "text", section: "Plan Details", required: true },
-    { key: "current_value", label: "Current Value", type: "currency", section: "Valuation", required: true },
-    { key: "amc", label: "Annual Management Charge", type: "percent", section: "Charges" },
-    { key: "platform_charge", label: "Platform Charge", type: "percent", section: "Charges" },
-    { key: "ongoing_charge", label: "Total Annual Ongoing Charge", type: "percent", section: "Charges" },
-    { key: "funds_held", label: "Fund(s) Held", type: "text", section: "Holdings" },
-    { key: "subscription_ytd", label: "Subscription Year-to-Date", type: "currency", section: "Allowances" },
-    { key: "annual_allowance_remaining", label: "Annual Allowance Remaining", type: "currency", section: "Allowances" },
-    { key: "nominee_beneficiary", label: "Nomination of Beneficiary", type: "yesno", section: "Other" },
-    { key: "transfer_restrictions", label: "Transfer-in Restrictions", type: "text", section: "Other" },
-    COMMON_NOTES,
-  ],
-
-  GIA: [
-    { key: "current_provider", label: "Current Provider", type: "text", section: "Plan Details", required: true },
-    { key: "current_value", label: "Current Value", type: "currency", section: "Valuation", required: true },
-    { key: "amc", label: "Annual Management Charge", type: "percent", section: "Charges" },
-    { key: "platform_charge", label: "Platform Charge", type: "percent", section: "Charges" },
-    { key: "ongoing_charge", label: "Total Annual Ongoing Charge", type: "percent", section: "Charges" },
-    { key: "funds_held", label: "Fund(s) Held", type: "text", section: "Holdings" },
-    { key: "cost_basis", label: "Cost Basis / Book Value", type: "currency", section: "Tax" },
-    { key: "unrealised_gain_loss", label: "Unrealised Gain/Loss", type: "currency", section: "Tax" },
-    COMMON_NOTES,
-  ],
-
-  "Personal Pension": [
-    {
-      key: "pension_subtype",
-      label: "Pension Sub-type",
-      type: "select",
-      section: "Plan Details",
-      options: ["Personal Pension", "SIPP", "Stakeholder", "Workplace", "Group"],
-      required: true,
-    },
-    { key: "current_provider", label: "Current Provider", type: "text", section: "Plan Details", required: true },
-    { key: "current_value", label: "Current Value", type: "currency", section: "Valuation", required: true },
-    { key: "transfer_value", label: "Transfer Value", type: "currency", section: "Valuation" },
-    { key: "protected_tfc_pct", label: "Protected Tax-Free Cash %", type: "percent", section: "Benefits" },
-    { key: "enhanced_tfc_amount", label: "Enhanced Tax-Free Cash Amount", type: "currency", section: "Benefits" },
-    {
-      key: "employer_contribution",
-      label: "Employer Contribution",
-      type: "text",
-      section: "Contributions",
-      showIf: { key: "pension_subtype", in: ["Workplace", "Group"] },
-      hint: "£ or % per period",
-    },
-    { key: "employee_contribution", label: "Employee Contribution", type: "text", section: "Contributions" },
-    { key: "amc", label: "Annual Management Charge", type: "percent", section: "Charges" },
-    { key: "platform_charge", label: "Platform Charge", type: "percent", section: "Charges" },
-    { key: "ongoing_charge", label: "Total Annual Ongoing Charge", type: "percent", section: "Charges" },
-    { key: "funds_held", label: "Fund(s) Held", type: "text", section: "Holdings" },
-    { key: "expression_of_wishes", label: "Expression of Wishes / Beneficiary Nomination", type: "yesno", section: "Beneficiaries" },
-    { key: "selected_retirement_age", label: "Selected Retirement Age / Date", type: "text", section: "Benefits" },
-    { key: "safeguarded_benefits", label: "Safeguarded / Guaranteed Benefits", type: "yesno", section: "Benefits" },
-    { key: "waiver_of_premium", label: "Waiver of Premium", type: "yesno", section: "Other" },
-    COMMON_NOTES,
-  ],
-
-  Bond: [
-    {
-      key: "bond_type",
-      label: "Bond Type",
-      type: "select",
-      section: "Plan Details",
-      options: ["Investment Bond", "Offshore Bond"],
-      required: true,
-    },
-    { key: "current_provider", label: "Current Provider", type: "text", section: "Plan Details", required: true },
-    { key: "current_value", label: "Current Value", type: "currency", section: "Valuation", required: true },
-    { key: "original_investment", label: "Original Investment Amount", type: "currency", section: "Valuation" },
-    { key: "chargeable_gain", label: "Gain / Chargeable Gain", type: "currency", section: "Tax" },
-    { key: "number_of_segments", label: "Number of Segments", type: "number", section: "Segments" },
-    { key: "surrender_value", label: "Surrender Value", type: "currency", section: "Segments" },
-    { key: "segment_surrender_value", label: "Segment Surrender Value", type: "currency", section: "Segments" },
-    { key: "amc", label: "Annual Management Charge", type: "percent", section: "Charges" },
-    { key: "ongoing_charge", label: "Total Annual Ongoing Charge", type: "percent", section: "Charges" },
-    { key: "funds_held", label: "Fund(s) Held", type: "text", section: "Holdings" },
-    { key: "nominee_beneficiary", label: "Nomination of Beneficiary", type: "yesno", section: "Other" },
-    { key: "assignment_trust", label: "Assignment / Trust", type: "text", section: "Other" },
-    COMMON_NOTES,
-  ],
-
-  "Final Salary": [
-    { key: "scheme_name", label: "Scheme Name", type: "text", section: "Scheme", required: true },
-    { key: "scheme_administrator", label: "Scheme Administrator / Provider", type: "text", section: "Scheme", required: true },
-    { key: "normal_retirement_date", label: "Normal Retirement Date", type: "date", section: "Scheme" },
-    { key: "accrued_pension", label: "Accrued Pension (£/year at NRD)", type: "currency", section: "Benefits" },
-    { key: "transfer_value", label: "Transfer Value (CETV)", type: "currency", section: "Benefits", required: true },
-    { key: "cetv_valid_until", label: "CETV Valid Until", type: "date", section: "Benefits" },
-    { key: "revaluation_rate", label: "Revaluation Rate", type: "percent", section: "Benefits" },
-    { key: "spouse_pension_pct", label: "Spouse / Dependant Pension %", type: "percent", section: "Death Benefits" },
-    { key: "death_in_service_lump_sum", label: "Lump Sum on Death in Service", type: "text", section: "Death Benefits", hint: "£ amount or x salary" },
-    { key: "pcls_option", label: "Pension Commencement Lump Sum Option", type: "yesno", section: "Benefits" },
-    {
-      key: "indexation_in_payment",
-      label: "Indexation in Payment",
-      type: "select",
-      section: "Benefits",
-      options: ["CPI", "RPI", "Fixed", "None"],
-    },
-    { key: "safeguarded_benefits", label: "Safeguarded Benefits Flag", type: "yesno", section: "Benefits", hint: "Always Yes for DB" },
-    COMMON_NOTES,
-  ],
-
-  Protection: [
-    {
-      key: "protection_subtype",
-      label: "Plan Type",
-      type: "select",
-      section: "Plan Details",
-      options: ["Term", "Whole of Life", "Critical Illness", "Income Protection"],
-      required: true,
-    },
-    { key: "current_provider", label: "Current Provider", type: "text", section: "Plan Details", required: true },
-    { key: "sum_assured", label: "Sum Assured", type: "currency", section: "Cover" },
-    { key: "monthly_premium", label: "Monthly Premium", type: "currency", section: "Premium" },
-    { key: "policy_term", label: "Policy Term (years / to age)", type: "text", section: "Cover" },
-    { key: "expiry_date", label: "Expiry Date", type: "date", section: "Cover" },
-    { key: "waiver_of_premium", label: "Waiver of Premium", type: "yesno", section: "Premium" },
-    { key: "in_trust", label: "In Trust", type: "yesno", section: "Other" },
-    { key: "nominee_beneficiary", label: "Nomination of Beneficiary", type: "yesno", section: "Other" },
-    {
-      key: "premium_basis",
-      label: "Guaranteed / Reviewable Premiums",
-      type: "select",
-      section: "Premium",
-      options: ["Guaranteed", "Reviewable"],
-    },
-    COMMON_NOTES,
-  ],
+  "Personal Pension": PENSION_FIELDS,
+  ISA: ISA_FIELDS,
+  GIA: GIA_FIELDS,
 };
 
 export function getTemplate(planType: string): ChecklistFieldDef[] {
-  return CHECKLIST_TEMPLATES[planType] ?? CHECKLIST_TEMPLATES["Personal Pension"];
+  return CHECKLIST_TEMPLATES[planType] ?? [];
 }
 
 /** Section ordering preserved as encountered in the template */
