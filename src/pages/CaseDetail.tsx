@@ -1,9 +1,10 @@
 import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, CheckCircle2, Loader2, ChevronRight, ChevronLeft } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Loader2, ChevronRight, ChevronLeft, AlertTriangle } from "lucide-react";
 import { getCaseById, updateCase } from "@/services/api";
 import { CEDING_STAGES, STATUS_LABELS, STATUS_STYLES, RAG_STYLES, calculateRag } from "@/lib/caseHelpers";
+import { isSupportedPlanType, SUPPORTED_PLAN_TYPES } from "@/lib/checklistTemplates";
 import { useRole } from "@/hooks/useRole";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -76,9 +77,16 @@ const CaseDetail = () => {
   const currentStage: number = (caseItem as any).current_stage ?? 1;
   const stagesCompleted: number[] = (caseItem as any).stages_completed ?? [];
   const rag = calculateRag(caseItem as any);
+  const planSupported = isSupportedPlanType(caseItem.plan_type);
 
   const goToStage = (n: number) => {
     if (n < 1 || n > 10) return;
+    if (!planSupported && n > 1) {
+      toast.error("Plan type out of scope", {
+        description: `${caseItem.plan_type} is not currently supported. Only ${SUPPORTED_PLAN_TYPES.join(", ")} can be processed.`,
+      });
+      return;
+    }
     updateMutation.mutate({ updates: { current_stage: n, last_activity_at: new Date().toISOString() } });
   };
 
