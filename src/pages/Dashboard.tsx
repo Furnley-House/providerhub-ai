@@ -9,8 +9,13 @@ import {
   Clock,
   TrendingUp,
   ArrowRight,
+  ExternalLink,
+  Loader2,
+  RefreshCw,
 } from "lucide-react";
-import { getCases } from "@/services/api";
+import { useState } from "react";
+import { getCases, updateCase } from "@/services/api";
+import { supabase } from "@/integrations/supabase/client";
 import { useRole } from "@/hooks/useRole";
 import { calculateRag, RAG_STYLES, STATUS_LABELS, STATUS_STYLES } from "@/lib/caseHelpers";
 import { seedDemoData } from "@/lib/seedDemoData";
@@ -21,6 +26,8 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { userName, role } = useRole();
+  const [preparingId, setPreparingId] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
 
   const { data: cases = [], isLoading } = useQuery({ queryKey: ["cases"], queryFn: getCases });
 
@@ -49,6 +56,73 @@ const Dashboard = () => {
     .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
     .slice(0, 6);
 
+  // SR-ready: ceding finished AND Zoho confirmed AND SR not already prepared.
+  const srReady = cases
+    .filter(
+      (c: any) =>
+        c.zoho_ceding_status === "ceding_complete" &&
+        ["complete", "approved"].includes(c.status) &&
+        !c.sr_prepared_at,
+    )
+    .sort(
+      (a: any, b: any) =>
+        new Date(b.ceding_complete_date ?? b.updated_at).getTime() -
+        new Date(a.ceding_complete_date ?? a.updated_at).getTime(),
+    );
+
+  const handlePrepareSR = async (c: any) => {
+    if (c.zoho_ceding_status !== "ceding_complete") {
+      toast.error("Zoho hasn't confirmed ceding yet", {
+        description: "Wait for the Zoho CRM blueprint to mark ceding complete.",
+      });
+      return;
+    }
+    setPreparingId(c.id);
+    try {
+      // Stub: in production this calls a Zoho CRM edge function that triggers
+      // the "SR Preparation" blueprint transition on the linked task.
+      await new Promise((r) => setTimeout(r, 600));
+      await updateCase(c.id, {
+        sr_prepared_at: new Date().toISOString(),
+        zoho_ceding_status: "sr_in_progress",
+      } as any);
+      await supabase.from("field_audit").insert({
+        case_id: c.id,
+        action: "sr_blueprint_triggered",
+        source: "dashboard",
+        actor_name: userName,
+        actor_role: role,
+        notes: `Triggered SR Preparation blueprint on Zoho task ${c.zoho_task_id ?? "(none)"}`,
+      });
+      qc.invalidateQueries({ queryKey: ["cases"] });
+      toast.success("SR blueprint triggered", { description: "Opening Zoho task…" });
+      if (c.zoho_task_id) {
+        const taskUrl = `https://crm.zoho.eu/crm/tab/Tasks/${c.zoho_task_id}`;
+        window.open(taskUrl, "_blank", "noopener,noreferrer");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to prepare SR", {
+        description: err instanceof Error ? err.message : "Unknown error",
+      });
+    } finally {
+      setPreparingId(null);
+    }
+  };
+
+  const handleSyncZoho = async () => {
+    // Stub Zoho sync: in production this hits a Zoho webhook/edge function
+    // and pulls the latest blueprint status for every linked task.
+    setSyncing(true);
+    try {
+      await new Promise((r) => setTimeout(r, 800));
+      qc.invalidateQueries({ queryKey: ["cases"] });
+      toast.success("Synced with Zoho CRM");
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   return (
     <div className="animate-slide-in">
       <div className="mb-6 flex items-start justify-between">
@@ -74,6 +148,85 @@ const Dashboard = () => {
         <KPICard icon={CheckCircle2} label="Completed this week" value={weeklyCompleted} sub="Primary KPI" accent="success" />
         <KPICard icon={Clock} label="In review" value={inReview} sub="Awaiting approval" accent="warning" />
         <KPICard icon={AlertTriangle} label="On hold" value={onHold} sub="Need attention" accent={onHold > 0 ? "overdue" : "muted"} />
+      </div>
+
+      {/* SR-ready (Zoho-confirmed ceding complete) */}
+      <div className="mb-6 theme-card theme-card-accent border border-teal/30 bg-teal/5 overflow-hidden p-0">
+        <div className="border-b border-teal/20 bg-teal/10 px-5 py-3 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[10px] uppercase tracking-widest font-bold text-teal">
+              Suitability Report queue
+            </p>
+            <h2 className="text-sm theme-heading text-foreground flex items-center gap-2 mt-0.5">
+              <Sparkles className="h-4 w-4 text-teal" />
+              Ready for SR · {srReady.length}
+            </h2>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSyncZoho}
+            disabled={syncing}
+            className="gap-2 shrink-0"
+          >
+            {syncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+            Sync Zoho
+          </Button>
+        </div>
+        {srReady.length === 0 ? (
+          <div className="px-5 py-8 text-center">
+            <p className="text-sm text-foreground font-medium">No cases ready for SR</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Cases appear here once Zoho CRM confirms ceding is complete.
+            </p>
+          </div>
+        ) : (
+          <ul className="divide-y divide-teal/10">
+            {srReady.slice(0, 6).map((c: any) => (
+              <li
+                key={c.id}
+                className="flex items-center gap-4 px-5 py-3 hover:bg-teal/5 transition-colors"
+              >
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-success/15 text-success shrink-0">
+                  <CheckCircle2 className="h-4 w-4" />
+                </div>
+                <button
+                  onClick={() => navigate(`/cases/${c.id}`)}
+                  className="flex-1 min-w-0 text-left"
+                >
+                  <p className="text-sm font-semibold text-foreground truncate">{c.client_name}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                    {c.provider_name} · {c.plan_type} ·{" "}
+                    <span className="font-mono">{c.case_ref}</span>
+                    {c.zoho_task_id && (
+                      <>
+                        {" · "}
+                        <span className="font-mono">Zoho {c.zoho_task_id}</span>
+                      </>
+                    )}
+                  </p>
+                </button>
+                <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-success">
+                  <CheckCircle2 className="h-3 w-3" /> Ceding complete
+                </span>
+                <Button
+                  size="sm"
+                  className="gap-2 shrink-0"
+                  onClick={() => handlePrepareSR(c)}
+                  disabled={preparingId === c.id}
+                >
+                  {preparingId === c.id ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-3.5 w-3.5" />
+                  )}
+                  {preparingId === c.id ? "Triggering…" : "Prepare SR"}
+                  {preparingId !== c.id && <ExternalLink className="h-3 w-3" />}
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
