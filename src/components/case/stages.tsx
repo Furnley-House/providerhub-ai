@@ -4,9 +4,9 @@ import {
   Upload,
   Cpu,
   Phone,
-  FileAudio,
   History,
-  UserCheck,
+  ClipboardCheck,
+  Send,
   CheckCircle2,
   Download,
   Sparkles,
@@ -16,20 +16,24 @@ import { DocumentList } from "./DocumentList";
 import { ExtractionWorkspace } from "./ExtractionWorkspace";
 import { CallWorkspace } from "./CallWorkspace";
 import { AuditTimeline } from "./AuditTimeline";
-import { AssignParaplannerDialog } from "./AssignParaplannerDialog";
 import { ApprovalWorkspace } from "./ApprovalWorkspace";
 import { ExportWorkspace } from "./ExportWorkspace";
 import { CompleteWorkspace } from "./CompleteWorkspace";
 import { useDocuments } from "@/hooks/useDocuments";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { getParaplanner } from "@/lib/paraplanners";
+import { useChecklistFields } from "@/hooks/useChecklistFields";
+import { getTemplate, groupBySection } from "@/lib/checklistTemplates";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { useRole } from "@/hooks/useRole";
 
 interface StageProps {
   caseItem: CaseRow;
 }
 
-const TOTAL_STAGES = 10;
+const TOTAL_STAGES = 9;
 
 function StagePanel({
   num,
