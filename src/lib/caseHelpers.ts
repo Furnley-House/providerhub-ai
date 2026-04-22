@@ -48,9 +48,6 @@ export const PLAN_TYPES = [
   "ISA",
   "GIA",
   "Personal Pension",
-  "Bond",
-  "Final Salary",
-  "Protection",
 ] as const;
 
 export type PlanType = (typeof PLAN_TYPES)[number];
