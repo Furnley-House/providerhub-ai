@@ -137,10 +137,13 @@ export type Database = {
           provider_id: string | null
           provider_name: string
           rag: string
+          sr_prepared_at: string | null
           stages_completed: number[]
           status: string
           transfer_value: string | null
           updated_at: string
+          zoho_ceding_status: string
+          zoho_synced_at: string | null
           zoho_task_id: string | null
         }
         Insert: {
@@ -170,10 +173,13 @@ export type Database = {
           provider_id?: string | null
           provider_name: string
           rag?: string
+          sr_prepared_at?: string | null
           stages_completed?: number[]
           status?: string
           transfer_value?: string | null
           updated_at?: string
+          zoho_ceding_status?: string
+          zoho_synced_at?: string | null
           zoho_task_id?: string | null
         }
         Update: {
@@ -203,10 +209,13 @@ export type Database = {
           provider_id?: string | null
           provider_name?: string
           rag?: string
+          sr_prepared_at?: string | null
           stages_completed?: number[]
           status?: string
           transfer_value?: string | null
           updated_at?: string
+          zoho_ceding_status?: string
+          zoho_synced_at?: string | null
           zoho_task_id?: string | null
         }
         Relationships: [

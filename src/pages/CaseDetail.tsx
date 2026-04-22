@@ -110,6 +110,10 @@ const CaseDetail = () => {
     if (currentStage === 8 && next === 9) {
       updates.status = "complete";
       updates.ceding_complete_date = new Date().toISOString().slice(0, 10);
+      // Mirror to the Zoho ceding status so the dashboard SR-ready panel picks it up.
+      // In production this happens via a Zoho CRM webhook; here we mark it locally.
+      (updates as any).zoho_ceding_status = "ceding_complete";
+      (updates as any).zoho_synced_at = new Date().toISOString();
     }
     updateMutation.mutate({ updates });
     toast.success(`Stage ${currentStage} complete`, {
