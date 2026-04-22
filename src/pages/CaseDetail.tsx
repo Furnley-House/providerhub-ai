@@ -261,7 +261,7 @@ const CaseDetail = () => {
                 {currentStage === 8 ? "Mark ceding complete" : "Mark complete & continue"}
                 <ChevronRight className="h-4 w-4" />
               </Button>
-            ) : (
+            ) : currentStage < 9 ? (
               <Button
                 variant="outline"
                 onClick={() => goToStage(currentStage + 1)}
@@ -270,6 +270,8 @@ const CaseDetail = () => {
               >
                 Next step <ChevronRight className="h-4 w-4" />
               </Button>
+            ) : (
+              <div />
             )}
           </div>
         </main>
