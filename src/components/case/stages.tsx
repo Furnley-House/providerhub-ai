@@ -398,10 +398,10 @@ export function StageExport({ caseItem }: StageProps) {
 export function StageComplete({ caseItem }: StageProps) {
   return (
     <StagePanel
-      num={10}
+      num={9}
       icon={CheckCircle2}
       title="Ceding Complete"
-      description="All nine ceding steps are done — the case is ready for the adviser to take over for the Suitability Report."
+      description="All ceding steps are done — the case is ready for the adviser to take over for the Suitability Report."
     >
       <CompleteWorkspace caseItem={caseItem} />
     </StagePanel>
