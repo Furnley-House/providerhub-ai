@@ -101,20 +101,29 @@ export function AppSidebar({ collapsed, onToggle }: { collapsed: boolean; onTogg
                       {CEDING_STAGES.map((s) => {
                         const isDone = stagesCompleted.includes(s.num);
                         const isCurrent = currentStage === s.num;
+                        const maxReachable = Math.max(
+                          currentStage,
+                          Math.min(
+                            CEDING_STAGES.length,
+                            (stagesCompleted.length > 0 ? Math.max(...stagesCompleted) : 0) + 1,
+                          ),
+                        );
+                        const isLocked = s.num > maxReachable;
                         return (
                           <li key={s.num}>
                             <button
+                              disabled={isLocked}
                               onClick={() =>
                                 navigate(`/cases/${activeCaseId}`, {
                                   state: { goToStage: s.num },
                                 })
                               }
-                              title={s.label}
+                              title={isLocked ? "Complete previous steps first" : s.label}
                               className={`flex w-full items-center gap-2 text-left text-[11px] px-2 py-1 rounded-md transition-colors ${
                                 isCurrent
                                   ? "bg-sidebar-accent text-sidebar-primary font-semibold"
                                   : "text-sidebar-foreground/80 hover:bg-sidebar-muted hover:text-sidebar-accent-foreground"
-                              }`}
+                              } ${isLocked ? "opacity-40 cursor-not-allowed hover:bg-transparent" : ""}`}
                             >
                               {isDone ? (
                                 <CheckCircle2 className="h-3.5 w-3.5 text-success shrink-0" />
