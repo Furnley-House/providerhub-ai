@@ -13,9 +13,8 @@ import {
   StageDocumentUpload,
   StageAIExtraction,
   StageCallAssist,
-  StageTranscript,
+  StageReviewChecklist,
   StageAuditTrail,
-  StageAssign,
   StageApproval,
   StageExport,
   StageComplete,
@@ -80,10 +79,19 @@ const CaseDetail = () => {
   const planSupported = isSupportedPlanType(caseItem.plan_type);
 
   const goToStage = (n: number) => {
-    if (n < 1 || n > 10) return;
+    if (n < 1 || n > 9) return;
     if (!planSupported && n > 1) {
       toast.error("Plan type out of scope", {
         description: `${caseItem.plan_type} is not currently supported. Only ${SUPPORTED_PLAN_TYPES.join(", ")} can be processed.`,
+      });
+      return;
+    }
+    // Sequential gating: cannot jump ahead past the next unfinished step.
+    const maxAllowed = Math.min(9, (stagesCompleted.length > 0 ? Math.max(...stagesCompleted) : 0) + 1);
+    const reachable = Math.max(currentStage, maxAllowed);
+    if (n > reachable) {
+      toast.error("Complete the previous step first", {
+        description: `You must finish step ${reachable} before moving to step ${n}.`,
       });
       return;
     }
@@ -92,20 +100,20 @@ const CaseDetail = () => {
 
   const completeAndNext = () => {
     const newCompleted = Array.from(new Set([...stagesCompleted, currentStage])).sort((a, b) => a - b);
-    const next = Math.min(currentStage + 1, 10);
+    const next = Math.min(currentStage + 1, 9);
     const updates: any = {
       current_stage: next,
       stages_completed: newCompleted,
       last_activity_at: new Date().toISOString(),
     };
-    // Stamp completion when crossing into Stage 10
-    if (currentStage === 9 && next === 10) {
+    // Stamp completion when crossing into the final stage
+    if (currentStage === 8 && next === 9) {
       updates.status = "complete";
       updates.ceding_complete_date = new Date().toISOString().slice(0, 10);
     }
     updateMutation.mutate({ updates });
     toast.success(`Stage ${currentStage} complete`, {
-      description: next === 10 ? "Ceding complete!" : `Moved to step ${next}.`,
+      description: next === 9 ? "Ceding complete!" : `Moved to step ${next}.`,
     });
   };
 
@@ -114,9 +122,8 @@ const CaseDetail = () => {
     StageDocumentUpload,
     StageAIExtraction,
     StageCallAssist,
-    StageTranscript,
+    StageReviewChecklist,
     StageAuditTrail,
-    StageAssign,
     StageApproval,
     StageExport,
     StageComplete,
@@ -158,7 +165,7 @@ const CaseDetail = () => {
                     year: "numeric",
                   })}
                 />
-                <HeaderField label="Stage" value={`${currentStage} of 10`} />
+                <HeaderField label="Stage" value={`${currentStage} of 9`} />
                 <HeaderField label="RAG" value={RAG_STYLES[rag].label} />
               </div>
             </div>
