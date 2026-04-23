@@ -38,7 +38,7 @@ const ZOHO_SAMPLES = [
 const Cases = () => {
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const { userName } = useRole();
+  const { userName, role } = useRole();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [planFilter, setPlanFilter] = useState<string>("all");
@@ -104,6 +104,9 @@ const Cases = () => {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return cases.filter((c) => {
+      // CA team only sees tasks assigned to them in Zoho CRM.
+      if (role === "ca_team" && (c.owner_name ?? "").trim() !== (userName ?? "").trim())
+        return false;
       if (statusFilter !== "all" && c.status !== statusFilter) return false;
       if (planFilter !== "all" && c.plan_type !== planFilter) return false;
       if (ragFilter !== "all" && calculateRag(c) !== ragFilter) return false;
@@ -111,7 +114,7 @@ const Cases = () => {
         return false;
       return true;
     });
-  }, [cases, search, statusFilter, planFilter, ragFilter]);
+  }, [cases, search, statusFilter, planFilter, ragFilter, role, userName]);
 
   return (
     <div className="animate-slide-in">

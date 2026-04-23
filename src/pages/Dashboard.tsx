@@ -35,6 +35,12 @@ const Dashboard = () => {
 
   const { data: cases = [], isLoading } = useQuery({ queryKey: ["cases"], queryFn: getCases });
 
+  // CA team members only see tasks assigned to them (mirrors Zoho CRM
+  // ownership). Advisers/paraplanners/admins see everything.
+  const myCases = role === "ca_team"
+    ? (cases as any[]).filter((c) => (c.owner_name ?? "").trim() === (userName ?? "").trim())
+    : (cases as any[]);
+
   const seedMutation = useMutation({
     mutationFn: seedDemoData,
     onSuccess: (r) => {
@@ -49,19 +55,20 @@ const Dashboard = () => {
   monday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
   monday.setHours(0, 0, 0, 0);
 
-  const weeklyCompleted = cases.filter(
+  const weeklyCompleted = myCases.filter(
     (c) => c.status === "complete" && new Date(c.updated_at) >= monday,
   ).length;
-  const inReview = cases.filter((c) => c.status === "in_review").length;
-  const onHold = cases.filter((c) => c.status === "on_hold").length;
-  const active = cases.filter((c) => !["complete", "approved"].includes(c.status)).length;
+  const inReview = myCases.filter((c) => c.status === "in_review").length;
+  const onHold = myCases.filter((c) => c.status === "on_hold").length;
+  const active = myCases.filter((c) => !["complete", "approved"].includes(c.status)).length;
 
-  const recent = [...cases]
+  const recent = [...myCases]
     .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
     .slice(0, 6);
 
   // SR-ready: ceding finished AND Zoho confirmed AND SR not already prepared.
-  const srReady = cases
+  // For CA team this is scoped to their own tasks.
+  const srReady = myCases
     .filter(
       (c: any) =>
         c.zoho_ceding_status === "ceding_complete" &&
@@ -84,6 +91,15 @@ const Dashboard = () => {
       map.get(key)!.push(c);
     }
     return Array.from(map.entries())
+      // CA team only sees clients where they own at least one task.
+      // Aggregate counts still include every CA's tasks so they know whether
+      // the client is ready for SR overall.
+      .filter(([, items]) => {
+        if (role !== "ca_team") return true;
+        return items.some(
+          (i) => (i.owner_name ?? "").trim() === (userName ?? "").trim(),
+        );
+      })
       .map(([client_name, items]) => {
         const total = items.length;
         const completed = items.filter((i) =>
@@ -94,7 +110,21 @@ const Dashboard = () => {
           allComplete && items.every((i) => i.zoho_ceding_status === "ceding_complete");
         const anySrInProgress = items.some((i) => i.sr_prepared_at);
         const srReady = allZohoConfirmed && !anySrInProgress;
-        return { client_name, items, total, completed, allComplete, srReady, anySrInProgress };
+        const myItems = role === "ca_team"
+          ? items.filter(
+              (i) => (i.owner_name ?? "").trim() === (userName ?? "").trim(),
+            )
+          : items;
+        return {
+          client_name,
+          items,
+          myItems,
+          total,
+          completed,
+          allComplete,
+          srReady,
+          anySrInProgress,
+        };
       })
       .sort((a, b) => {
         // SR-ready first, then most incomplete, then alphabetical
@@ -345,8 +375,10 @@ const Dashboard = () => {
                         className="gap-2 shrink-0"
                         onClick={(e) => {
                           e.stopPropagation();
-                          // Trigger SR for the most recently completed case in the group
-                          const target = [...g.items]
+                          // Trigger SR for the most recently completed case in the group.
+                          // CA team can only act on their own tasks.
+                          const pool = role === "ca_team" ? g.myItems : g.items;
+                          const target = [...pool]
                             .filter((i) => !i.sr_prepared_at)
                             .sort(
                               (a, b) =>
@@ -354,6 +386,10 @@ const Dashboard = () => {
                                 new Date(a.ceding_complete_date ?? a.updated_at).getTime(),
                             )[0];
                           if (target) handlePrepareSR(target);
+                          else
+                            toast.info("No SR-ready task assigned to you", {
+                              description: "Another CA owns the remaining task for this client.",
+                            });
                         }}
                         disabled={preparingId !== null}
                       >
@@ -372,11 +408,22 @@ const Dashboard = () => {
                         const statusStyle =
                           STATUS_STYLES[c.status] ?? "bg-muted text-muted-foreground";
                         const done = ["complete", "approved"].includes(c.status);
+                        const isMine =
+                          role !== "ca_team" ||
+                          (c.owner_name ?? "").trim() === (userName ?? "").trim();
                         return (
                           <li key={c.id}>
                             <button
-                              onClick={() => navigate(`/cases/${c.id}`)}
-                              className="w-full flex items-center gap-3 pl-16 pr-5 py-2 hover:bg-muted/40 transition-colors text-left"
+                              onClick={() => {
+                                if (isMine) navigate(`/cases/${c.id}`);
+                                else
+                                  toast.info("Owned by another CA", {
+                                    description: `${c.owner_name ?? "Another team member"} is handling this task.`,
+                                  });
+                              }}
+                              className={`w-full flex items-center gap-3 pl-16 pr-5 py-2 transition-colors text-left ${
+                                isMine ? "hover:bg-muted/40" : "opacity-70 cursor-not-allowed"
+                              }`}
                             >
                               {done ? (
                                 <CheckCircle2 className="h-3.5 w-3.5 text-success shrink-0" />
@@ -386,6 +433,11 @@ const Dashboard = () => {
                               <div className="flex-1 min-w-0">
                                 <p className="text-xs font-medium text-foreground truncate">
                                   {c.provider_name} · {c.plan_type}
+                                  {!isMine && c.owner_name && (
+                                    <span className="ml-2 text-[10px] font-normal text-muted-foreground">
+                                      · owned by {c.owner_name}
+                                    </span>
+                                  )}
                                 </p>
                                 <p className="text-[11px] text-muted-foreground font-mono truncate">
                                   {c.case_ref} · {c.plan_number}
@@ -396,7 +448,9 @@ const Dashboard = () => {
                               >
                                 {STATUS_LABELS[c.status] ?? c.status}
                               </span>
-                              <ArrowRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                              {isMine && (
+                                <ArrowRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                              )}
                             </button>
                           </li>
                         );
