@@ -12,6 +12,9 @@ import {
   ExternalLink,
   Loader2,
   RefreshCw,
+  Users,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { useState } from "react";
 import { getCases, updateCase } from "@/services/api";
