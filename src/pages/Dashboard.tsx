@@ -274,6 +274,142 @@ const Dashboard = () => {
         )}
       </div>
 
+      {/* Client-wise view: aggregates all ceding tasks per client and shows SR readiness */}
+      <div className="mb-6 theme-card theme-card-accent border border-border bg-card overflow-hidden p-0">
+        <div className="border-b border-border bg-muted/30 px-5 py-3 flex items-center justify-between">
+          <h2 className="text-sm theme-heading text-foreground flex items-center gap-2">
+            <Users className="h-4 w-4 text-teal" />
+            Cases by client · {clientGroups.length}
+          </h2>
+          <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">
+            SR unlocks once all ceding tasks complete
+          </span>
+        </div>
+        {clientGroups.length === 0 ? (
+          <div className="px-5 py-10 text-center text-sm text-muted-foreground">
+            No clients yet.
+          </div>
+        ) : (
+          <ul className="divide-y divide-border">
+            {clientGroups.map((g) => {
+              const isExpanded = expandedClients.has(g.client_name);
+              const pct = g.total > 0 ? Math.round((g.completed / g.total) * 100) : 0;
+              return (
+                <li key={g.client_name}>
+                  <button
+                    onClick={() => toggleClient(g.client_name)}
+                    className="w-full flex items-center gap-4 px-5 py-3 hover:bg-muted/40 transition-colors text-left"
+                  >
+                    <div
+                      className={`flex h-9 w-9 items-center justify-center rounded-full shrink-0 ${
+                        g.allComplete ? "bg-success/15 text-success" : "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      {g.allComplete ? (
+                        <CheckCircle2 className="h-4 w-4" />
+                      ) : (
+                        <Briefcase className="h-4 w-4" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm font-semibold text-foreground truncate">
+                          {g.client_name}
+                        </p>
+                        <span className="text-[10px] font-semibold text-muted-foreground">
+                          {g.completed} / {g.total} ceding tasks
+                        </span>
+                        {g.srReady && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-teal/15 text-teal">
+                            <Sparkles className="h-3 w-3" /> SR ready
+                          </span>
+                        )}
+                        {g.anySrInProgress && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-info/15 text-info">
+                            SR in progress
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-1.5 h-1.5 bg-muted rounded-full overflow-hidden max-w-md">
+                        <div
+                          className={`h-full transition-all ${
+                            g.allComplete ? "bg-success" : "bg-teal"
+                          }`}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+                    {g.srReady && (
+                      <Button
+                        size="sm"
+                        className="gap-2 shrink-0"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // Trigger SR for the most recently completed case in the group
+                          const target = [...g.items]
+                            .filter((i) => !i.sr_prepared_at)
+                            .sort(
+                              (a, b) =>
+                                new Date(b.ceding_complete_date ?? b.updated_at).getTime() -
+                                new Date(a.ceding_complete_date ?? a.updated_at).getTime(),
+                            )[0];
+                          if (target) handlePrepareSR(target);
+                        }}
+                        disabled={preparingId !== null}
+                      >
+                        <Sparkles className="h-3.5 w-3.5" /> Proceed to SR
+                      </Button>
+                    )}
+                    {isExpanded ? (
+                      <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+                    )}
+                  </button>
+                  {isExpanded && (
+                    <ul className="bg-muted/20 border-t border-border divide-y divide-border">
+                      {g.items.map((c: any) => {
+                        const statusStyle =
+                          STATUS_STYLES[c.status] ?? "bg-muted text-muted-foreground";
+                        const done = ["complete", "approved"].includes(c.status);
+                        return (
+                          <li key={c.id}>
+                            <button
+                              onClick={() => navigate(`/cases/${c.id}`)}
+                              className="w-full flex items-center gap-3 pl-16 pr-5 py-2 hover:bg-muted/40 transition-colors text-left"
+                            >
+                              {done ? (
+                                <CheckCircle2 className="h-3.5 w-3.5 text-success shrink-0" />
+                              ) : (
+                                <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-medium text-foreground truncate">
+                                  {c.provider_name} · {c.plan_type}
+                                </p>
+                                <p className="text-[11px] text-muted-foreground font-mono truncate">
+                                  {c.case_ref} · {c.plan_number}
+                                </p>
+                              </div>
+                              <span
+                                className={`hidden sm:inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold ${statusStyle}`}
+                              >
+                                {STATUS_LABELS[c.status] ?? c.status}
+                              </span>
+                              <ArrowRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 theme-card theme-card-accent border border-border bg-card overflow-hidden p-0">
           <div className="border-b border-border bg-muted/30 px-5 py-3 flex items-center justify-between">
