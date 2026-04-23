@@ -375,8 +375,10 @@ const Dashboard = () => {
                         className="gap-2 shrink-0"
                         onClick={(e) => {
                           e.stopPropagation();
-                          // Trigger SR for the most recently completed case in the group
-                          const target = [...g.items]
+                          // Trigger SR for the most recently completed case in the group.
+                          // CA team can only act on their own tasks.
+                          const pool = role === "ca_team" ? g.myItems : g.items;
+                          const target = [...pool]
                             .filter((i) => !i.sr_prepared_at)
                             .sort(
                               (a, b) =>
@@ -384,6 +386,10 @@ const Dashboard = () => {
                                 new Date(a.ceding_complete_date ?? a.updated_at).getTime(),
                             )[0];
                           if (target) handlePrepareSR(target);
+                          else
+                            toast.info("No SR-ready task assigned to you", {
+                              description: "Another CA owns the remaining task for this client.",
+                            });
                         }}
                         disabled={preparingId !== null}
                       >
