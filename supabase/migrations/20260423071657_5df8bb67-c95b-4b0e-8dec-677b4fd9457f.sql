@@ -1,0 +1,1 @@
+UPDATE public.cases SET current_stage = 9, stages_completed = ARRAY[1,2,3,4,5,6,7,8,9] WHERE current_stage > 9;
