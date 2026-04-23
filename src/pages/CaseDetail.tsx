@@ -25,7 +25,7 @@ const CaseDetail = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const qc = useQueryClient();
-  const { isCA } = useRole();
+  const { isCA, role, userName } = useRole();
 
   const { data: caseItem, isLoading } = useQuery({
     queryKey: ["case", id],
@@ -68,6 +68,27 @@ const CaseDetail = () => {
         <p className="text-muted-foreground mb-4">Case not found.</p>
         <Link to="/cases" className="text-teal hover:underline text-sm">
           ← Back to cases
+        </Link>
+      </div>
+    );
+  }
+
+  // CA team can only open tasks assigned to them in Zoho CRM.
+  if (
+    role === "ca_team" &&
+    (caseItem.owner_name ?? "").trim() !== (userName ?? "").trim()
+  ) {
+    return (
+      <div className="p-8 text-center max-w-md mx-auto">
+        <AlertTriangle className="mx-auto mb-3 h-10 w-10 text-warning" />
+        <p className="text-foreground font-semibold mb-1">Not assigned to you</p>
+        <p className="text-sm text-muted-foreground mb-4">
+          This task is owned by{" "}
+          <strong>{caseItem.owner_name ?? "another CA"}</strong> in Zoho CRM.
+          Only the assigned CA can open it.
+        </p>
+        <Link to="/cases" className="text-teal hover:underline text-sm">
+          ← Back to my cases
         </Link>
       </div>
     );
