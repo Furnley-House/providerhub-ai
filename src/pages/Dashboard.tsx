@@ -35,6 +35,12 @@ const Dashboard = () => {
 
   const { data: cases = [], isLoading } = useQuery({ queryKey: ["cases"], queryFn: getCases });
 
+  // CA team members only see tasks assigned to them (mirrors Zoho CRM
+  // ownership). Advisers/paraplanners/admins see everything.
+  const myCases = role === "ca_team"
+    ? (cases as any[]).filter((c) => (c.owner_name ?? "").trim() === (userName ?? "").trim())
+    : (cases as any[]);
+
   const seedMutation = useMutation({
     mutationFn: seedDemoData,
     onSuccess: (r) => {
@@ -49,19 +55,20 @@ const Dashboard = () => {
   monday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
   monday.setHours(0, 0, 0, 0);
 
-  const weeklyCompleted = cases.filter(
+  const weeklyCompleted = myCases.filter(
     (c) => c.status === "complete" && new Date(c.updated_at) >= monday,
   ).length;
-  const inReview = cases.filter((c) => c.status === "in_review").length;
-  const onHold = cases.filter((c) => c.status === "on_hold").length;
-  const active = cases.filter((c) => !["complete", "approved"].includes(c.status)).length;
+  const inReview = myCases.filter((c) => c.status === "in_review").length;
+  const onHold = myCases.filter((c) => c.status === "on_hold").length;
+  const active = myCases.filter((c) => !["complete", "approved"].includes(c.status)).length;
 
-  const recent = [...cases]
+  const recent = [...myCases]
     .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
     .slice(0, 6);
 
   // SR-ready: ceding finished AND Zoho confirmed AND SR not already prepared.
-  const srReady = cases
+  // For CA team this is scoped to their own tasks.
+  const srReady = myCases
     .filter(
       (c: any) =>
         c.zoho_ceding_status === "ceding_complete" &&
