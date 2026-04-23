@@ -31,6 +31,7 @@ const Dashboard = () => {
   const { userName, role } = useRole();
   const [preparingId, setPreparingId] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
+  const [expandedClients, setExpandedClients] = useState<Set<string>>(new Set());
 
   const { data: cases = [], isLoading } = useQuery({ queryKey: ["cases"], queryFn: getCases });
 
@@ -72,6 +73,47 @@ const Dashboard = () => {
         new Date(b.ceding_complete_date ?? b.updated_at).getTime() -
         new Date(a.ceding_complete_date ?? a.updated_at).getTime(),
     );
+
+  // Group every case by client so advisers can see SR readiness across all
+  // ceding tasks belonging to the same person.
+  const clientGroups = (() => {
+    const map = new Map<string, any[]>();
+    for (const c of cases as any[]) {
+      const key = c.client_name?.trim() || "Unknown client";
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(c);
+    }
+    return Array.from(map.entries())
+      .map(([client_name, items]) => {
+        const total = items.length;
+        const completed = items.filter((i) =>
+          ["complete", "approved"].includes(i.status),
+        ).length;
+        const allComplete = total > 0 && completed === total;
+        const allZohoConfirmed =
+          allComplete && items.every((i) => i.zoho_ceding_status === "ceding_complete");
+        const anySrInProgress = items.some((i) => i.sr_prepared_at);
+        const srReady = allZohoConfirmed && !anySrInProgress;
+        return { client_name, items, total, completed, allComplete, srReady, anySrInProgress };
+      })
+      .sort((a, b) => {
+        // SR-ready first, then most incomplete, then alphabetical
+        if (a.srReady !== b.srReady) return a.srReady ? -1 : 1;
+        const aRem = a.total - a.completed;
+        const bRem = b.total - b.completed;
+        if (aRem !== bRem) return bRem - aRem;
+        return a.client_name.localeCompare(b.client_name);
+      });
+  })();
+
+  const toggleClient = (name: string) => {
+    setExpandedClients((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+  };
 
   const handlePrepareSR = async (c: any) => {
     if (c.zoho_ceding_status !== "ceding_complete") {
