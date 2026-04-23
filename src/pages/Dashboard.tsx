@@ -408,11 +408,22 @@ const Dashboard = () => {
                         const statusStyle =
                           STATUS_STYLES[c.status] ?? "bg-muted text-muted-foreground";
                         const done = ["complete", "approved"].includes(c.status);
+                        const isMine =
+                          role !== "ca_team" ||
+                          (c.owner_name ?? "").trim() === (userName ?? "").trim();
                         return (
                           <li key={c.id}>
                             <button
-                              onClick={() => navigate(`/cases/${c.id}`)}
-                              className="w-full flex items-center gap-3 pl-16 pr-5 py-2 hover:bg-muted/40 transition-colors text-left"
+                              onClick={() => {
+                                if (isMine) navigate(`/cases/${c.id}`);
+                                else
+                                  toast.info("Owned by another CA", {
+                                    description: `${c.owner_name ?? "Another team member"} is handling this task.`,
+                                  });
+                              }}
+                              className={`w-full flex items-center gap-3 pl-16 pr-5 py-2 transition-colors text-left ${
+                                isMine ? "hover:bg-muted/40" : "opacity-70 cursor-not-allowed"
+                              }`}
                             >
                               {done ? (
                                 <CheckCircle2 className="h-3.5 w-3.5 text-success shrink-0" />
@@ -422,6 +433,11 @@ const Dashboard = () => {
                               <div className="flex-1 min-w-0">
                                 <p className="text-xs font-medium text-foreground truncate">
                                   {c.provider_name} · {c.plan_type}
+                                  {!isMine && c.owner_name && (
+                                    <span className="ml-2 text-[10px] font-normal text-muted-foreground">
+                                      · owned by {c.owner_name}
+                                    </span>
+                                  )}
                                 </p>
                                 <p className="text-[11px] text-muted-foreground font-mono truncate">
                                   {c.case_ref} · {c.plan_number}
@@ -432,7 +448,9 @@ const Dashboard = () => {
                               >
                                 {STATUS_LABELS[c.status] ?? c.status}
                               </span>
-                              <ArrowRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                              {isMine && (
+                                <ArrowRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                              )}
                             </button>
                           </li>
                         );
