@@ -375,9 +375,14 @@ const Dashboard = () => {
                         className="gap-2 shrink-0"
                         onClick={(e) => {
                           e.stopPropagation();
-                          // Trigger SR for the most recently completed case in the group.
-                          // CA team can only act on their own tasks.
-                          const pool = role === "ca_team" ? g.myItems : g.items;
+                          // SR is a client-level action: once every ceding task
+                          // for the client is complete, any team member viewing
+                          // the client can trigger SR — even if the remaining
+                          // task is owned by another CA. Prefer the user's own
+                          // task when available, otherwise fall back to the most
+                          // recently completed task in the group.
+                          const ownPending = g.myItems.filter((i: any) => !i.sr_prepared_at);
+                          const pool = ownPending.length > 0 ? ownPending : g.items;
                           const target = [...pool]
                             .filter((i) => !i.sr_prepared_at)
                             .sort(
@@ -387,8 +392,8 @@ const Dashboard = () => {
                             )[0];
                           if (target) handlePrepareSR(target);
                           else
-                            toast.info("No SR-ready task assigned to you", {
-                              description: "Another CA owns the remaining task for this client.",
+                            toast.info("SR already prepared", {
+                              description: "Every task for this client has already moved to SR.",
                             });
                         }}
                         disabled={preparingId !== null}
