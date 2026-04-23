@@ -91,6 +91,15 @@ const Dashboard = () => {
       map.get(key)!.push(c);
     }
     return Array.from(map.entries())
+      // CA team only sees clients where they own at least one task.
+      // Aggregate counts still include every CA's tasks so they know whether
+      // the client is ready for SR overall.
+      .filter(([, items]) => {
+        if (role !== "ca_team") return true;
+        return items.some(
+          (i) => (i.owner_name ?? "").trim() === (userName ?? "").trim(),
+        );
+      })
       .map(([client_name, items]) => {
         const total = items.length;
         const completed = items.filter((i) =>
@@ -101,7 +110,21 @@ const Dashboard = () => {
           allComplete && items.every((i) => i.zoho_ceding_status === "ceding_complete");
         const anySrInProgress = items.some((i) => i.sr_prepared_at);
         const srReady = allZohoConfirmed && !anySrInProgress;
-        return { client_name, items, total, completed, allComplete, srReady, anySrInProgress };
+        const myItems = role === "ca_team"
+          ? items.filter(
+              (i) => (i.owner_name ?? "").trim() === (userName ?? "").trim(),
+            )
+          : items;
+        return {
+          client_name,
+          items,
+          myItems,
+          total,
+          completed,
+          allComplete,
+          srReady,
+          anySrInProgress,
+        };
       })
       .sort((a, b) => {
         // SR-ready first, then most incomplete, then alphabetical
