@@ -73,8 +73,12 @@ const CaseDetail = () => {
     );
   }
 
-  const currentStage: number = (caseItem as any).current_stage ?? 1;
-  const stagesCompleted: number[] = (caseItem as any).stages_completed ?? [];
+  // Clamp to valid range — legacy data may have stage > 9 from earlier 10-step flow.
+  const rawStage: number = (caseItem as any).current_stage ?? 1;
+  const currentStage: number = Math.min(9, Math.max(1, rawStage));
+  const stagesCompleted: number[] = ((caseItem as any).stages_completed ?? []).filter(
+    (n: number) => n >= 1 && n <= 9,
+  );
   const rag = calculateRag(caseItem as any);
   const planSupported = isSupportedPlanType(caseItem.plan_type);
 
@@ -258,7 +262,7 @@ const CaseDetail = () => {
               <ChevronLeft className="h-4 w-4" /> Previous step
             </Button>
             <p className="text-xs text-muted-foreground">
-              Step {currentStage} of 9 · {CEDING_STAGES[currentStage - 1].label}
+              Step {currentStage} of 9 · {CEDING_STAGES[currentStage - 1]?.label ?? ""}
             </p>
             {isCA && currentStage < 9 ? (
               <Button onClick={completeAndNext} className="gap-2" disabled={!planSupported}>
