@@ -207,8 +207,19 @@ const Cases = () => {
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by client, provider, policy ref…" className="pl-9" />
         </div>
-        <FilterSelect value={statusFilter} onChange={setStatusFilter} placeholder="Status">
+        <FilterSelect
+          value={statusFilter}
+          onChange={(v) => {
+            setStatusFilter(v);
+            const next = new URLSearchParams(searchParams);
+            if (v === "all") next.delete("status");
+            else next.set("status", v);
+            setSearchParams(next, { replace: true });
+          }}
+          placeholder="Status"
+        >
           <SelectItem value="all">All statuses</SelectItem>
+          <SelectItem value="active">Active (in progress)</SelectItem>
           {CASE_STATUSES.map((s) => (
             <SelectItem key={s} value={s}>
               {STATUS_LABELS[s]}
