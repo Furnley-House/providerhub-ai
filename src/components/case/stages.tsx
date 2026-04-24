@@ -117,6 +117,19 @@ export function StageCaseDetails({ caseItem }: StageProps) {
   );
 }
 
+export function StageSendLOA({ caseItem }: StageProps) {
+  return (
+    <StagePanel
+      num={2}
+      icon={Mail}
+      title="Send LOA"
+      description="Send the Letter of Authority via Origo, email or courier — and track the response back from the provider."
+    >
+      <SendLOAWorkspace caseItem={caseItem} />
+    </StagePanel>
+  );
+}
+
 export function StageDocumentUpload({ caseItem }: StageProps) {
   // (Stage 3 — see StageSendLOA above for stage 2)
   const { documents, removeDocument, refresh } = useDocuments(caseItem.id);
