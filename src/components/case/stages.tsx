@@ -116,7 +116,7 @@ export function StageCaseDetails({ caseItem }: StageProps) {
 }
 
 export function StageDocumentUpload({ caseItem }: StageProps) {
-  const { documents, removeDocument } = useDocuments(caseItem.id);
+  const { documents, removeDocument, refresh } = useDocuments(caseItem.id);
   return (
     <StagePanel
       num={2}
@@ -125,7 +125,7 @@ export function StageDocumentUpload({ caseItem }: StageProps) {
       description="Upload the policy pack(s) received from the provider — PDFs, multi-file supported."
     >
       <div className="space-y-4">
-        <DocumentUploader caseId={caseItem.id} />
+        <DocumentUploader caseId={caseItem.id} onUploaded={refresh} />
         <div className="rounded-md border border-border bg-card p-3">
           <h4 className="text-[11px] uppercase tracking-widest font-bold text-muted-foreground mb-2">
             Uploaded documents ({documents.length})
