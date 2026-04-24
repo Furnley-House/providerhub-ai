@@ -11,6 +11,8 @@ import {
   Download,
   Sparkles,
 } from "lucide-react";
+import { Mail } from "lucide-react";
+import { SendLOAWorkspace } from "./SendLOAWorkspace";
 import { DocumentUploader } from "./DocumentUploader";
 import { DocumentList } from "./DocumentList";
 import { ExtractionWorkspace } from "./ExtractionWorkspace";
@@ -33,7 +35,7 @@ interface StageProps {
   caseItem: CaseRow;
 }
 
-const TOTAL_STAGES = 9;
+const TOTAL_STAGES = 10;
 
 function StagePanel({
   num,
@@ -115,11 +117,25 @@ export function StageCaseDetails({ caseItem }: StageProps) {
   );
 }
 
-export function StageDocumentUpload({ caseItem }: StageProps) {
-  const { documents, removeDocument, refresh } = useDocuments(caseItem.id);
+export function StageSendLOA({ caseItem }: StageProps) {
   return (
     <StagePanel
       num={2}
+      icon={Mail}
+      title="Send LOA"
+      description="Send the Letter of Authority via Origo, email or courier — and track the response back from the provider."
+    >
+      <SendLOAWorkspace caseItem={caseItem} />
+    </StagePanel>
+  );
+}
+
+export function StageDocumentUpload({ caseItem }: StageProps) {
+  // (Stage 3 — see StageSendLOA above for stage 2)
+  const { documents, removeDocument, refresh } = useDocuments(caseItem.id);
+  return (
+    <StagePanel
+      num={3}
       icon={Upload}
       title="Document Upload"
       description="Upload the policy pack(s) received from the provider — PDFs, multi-file supported."
@@ -147,7 +163,7 @@ export function StageDocumentUpload({ caseItem }: StageProps) {
 export function StageAIExtraction({ caseItem }: StageProps) {
   return (
     <StagePanel
-      num={3}
+      num={4}
       icon={Cpu}
       title="Extract & Fill Gaps"
       description="Side-by-side viewer — Gemini reads each PDF, populates the checklist, and links every value to its source page. Fill any remaining gaps inline."
@@ -160,7 +176,7 @@ export function StageAIExtraction({ caseItem }: StageProps) {
 export function StageCallAssist({ caseItem }: StageProps) {
   return (
     <StagePanel
-      num={4}
+      num={5}
       icon={Phone}
       title="Call Assist with AI Script"
       description="AI generates a tailored script targeting your remaining missing fields. Start the call (RingCentral in production), capture the transcript, then merge the agent's answers straight into the checklist."
@@ -257,7 +273,7 @@ export function StageReviewChecklist({ caseItem }: StageProps) {
 
   return (
     <StagePanel
-      num={5}
+      num={6}
       icon={ClipboardCheck}
       title="Review Checklist"
       description="Final review of the completed checklist before handing off for paraplanner approval."
@@ -430,7 +446,7 @@ function SummaryTile({
 export function StageAuditTrail({ caseItem }: StageProps) {
   return (
     <StagePanel
-      num={6}
+      num={7}
       icon={History}
       title="Audit Trail"
       description="Every field change on this case — AI extractions, manual edits, call merges, approvals — captured immutably."
@@ -443,7 +459,7 @@ export function StageAuditTrail({ caseItem }: StageProps) {
 export function StageApproval({ caseItem }: StageProps) {
   return (
     <StagePanel
-      num={7}
+      num={8}
       icon={CheckCircle2}
       title="Paraplanner / Adviser Approval"
       description="Per-field approve, request review with comment, then sign off the whole case once every field is approved."
@@ -456,7 +472,7 @@ export function StageApproval({ caseItem }: StageProps) {
 export function StageExport({ caseItem }: StageProps) {
   return (
     <StagePanel
-      num={8}
+      num={9}
       icon={Download}
       title="Export & Upload to WorkDrive"
       description="Generate the completed checklist as Excel (Summary + Checklist + Audit Trail tabs) and push to Zoho WorkDrive."
@@ -469,7 +485,7 @@ export function StageExport({ caseItem }: StageProps) {
 export function StageComplete({ caseItem }: StageProps) {
   return (
     <StagePanel
-      num={9}
+      num={10}
       icon={CheckCircle2}
       title="Ceding Complete"
       description="All ceding steps are done — the case is ready for the adviser to take over for the Suitability Report."

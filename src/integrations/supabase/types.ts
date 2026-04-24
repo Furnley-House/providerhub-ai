@@ -124,7 +124,11 @@ export type Database = {
           id: string
           is_overdue: boolean | null
           last_activity_at: string
+          loa_method: string | null
+          loa_notes: string | null
           loa_sent_date: string | null
+          loa_status: string
+          loa_tracking_ref: string | null
           missing_fields_count: number | null
           owner_id: string | null
           owner_name: string | null
@@ -160,7 +164,11 @@ export type Database = {
           id?: string
           is_overdue?: boolean | null
           last_activity_at?: string
+          loa_method?: string | null
+          loa_notes?: string | null
           loa_sent_date?: string | null
+          loa_status?: string
+          loa_tracking_ref?: string | null
           missing_fields_count?: number | null
           owner_id?: string | null
           owner_name?: string | null
@@ -196,7 +204,11 @@ export type Database = {
           id?: string
           is_overdue?: boolean | null
           last_activity_at?: string
+          loa_method?: string | null
+          loa_notes?: string | null
           loa_sent_date?: string | null
+          loa_status?: string
+          loa_tracking_ref?: string | null
           missing_fields_count?: number | null
           owner_id?: string | null
           owner_name?: string | null

@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
   StageCaseDetails,
+  StageSendLOA,
   StageDocumentUpload,
   StageAIExtraction,
   StageCallAssist,
@@ -94,17 +95,17 @@ const CaseDetail = () => {
     );
   }
 
-  // Clamp to valid range — legacy data may have stage > 9 from earlier 10-step flow.
+  // Clamp to valid range — flow has 10 stages.
   const rawStage: number = (caseItem as any).current_stage ?? 1;
-  const currentStage: number = Math.min(9, Math.max(1, rawStage));
+  const currentStage: number = Math.min(10, Math.max(1, rawStage));
   const stagesCompleted: number[] = ((caseItem as any).stages_completed ?? []).filter(
-    (n: number) => n >= 1 && n <= 9,
+    (n: number) => n >= 1 && n <= 10,
   );
   const rag = calculateRag(caseItem as any);
   const planSupported = isSupportedPlanType(caseItem.plan_type);
 
   const goToStage = (n: number) => {
-    if (n < 1 || n > 9) return;
+    if (n < 1 || n > 10) return;
     if (!planSupported && n > 1) {
       toast.error("Plan type out of scope", {
         description: `${caseItem.plan_type} is not currently supported. Only ${SUPPORTED_PLAN_TYPES.join(", ")} can be processed.`,
@@ -112,7 +113,7 @@ const CaseDetail = () => {
       return;
     }
     // Sequential gating: cannot jump ahead past the next unfinished step.
-    const maxAllowed = Math.min(9, (stagesCompleted.length > 0 ? Math.max(...stagesCompleted) : 0) + 1);
+    const maxAllowed = Math.min(10, (stagesCompleted.length > 0 ? Math.max(...stagesCompleted) : 0) + 1);
     const reachable = Math.max(currentStage, maxAllowed);
     if (n > reachable) {
       toast.error("Complete the previous step first", {
@@ -125,14 +126,14 @@ const CaseDetail = () => {
 
   const completeAndNext = () => {
     const newCompleted = Array.from(new Set([...stagesCompleted, currentStage])).sort((a, b) => a - b);
-    const next = Math.min(currentStage + 1, 9);
+    const next = Math.min(currentStage + 1, 10);
     const updates: any = {
       current_stage: next,
       stages_completed: newCompleted,
       last_activity_at: new Date().toISOString(),
     };
     // Stamp completion when crossing into the final stage
-    if (currentStage === 8 && next === 9) {
+    if (currentStage === 9 && next === 10) {
       updates.status = "complete";
       updates.ceding_complete_date = new Date().toISOString().slice(0, 10);
       // Mirror to the Zoho ceding status so the dashboard SR-ready panel picks it up.
@@ -142,12 +143,13 @@ const CaseDetail = () => {
     }
     updateMutation.mutate({ updates });
     toast.success(`Stage ${currentStage} complete`, {
-      description: next === 9 ? "Ceding complete!" : `Moved to step ${next}.`,
+      description: next === 10 ? "Ceding complete!" : `Moved to step ${next}.`,
     });
   };
 
   const StageComponent = [
     StageCaseDetails,
+    StageSendLOA,
     StageDocumentUpload,
     StageAIExtraction,
     StageCallAssist,
@@ -194,7 +196,7 @@ const CaseDetail = () => {
                     year: "numeric",
                   })}
                 />
-                <HeaderField label="Stage" value={`${currentStage} of 9`} />
+                <HeaderField label="Stage" value={`${currentStage} of 10`} />
                 <HeaderField label="RAG" value={RAG_STYLES[rag].label} />
               </div>
             </div>
@@ -209,7 +211,7 @@ const CaseDetail = () => {
               const isCurrent = currentStage === s.num;
               const maxReachable = Math.max(
                 currentStage,
-                Math.min(9, (stagesCompleted.length > 0 ? Math.max(...stagesCompleted) : 0) + 1),
+                Math.min(10, (stagesCompleted.length > 0 ? Math.max(...stagesCompleted) : 0) + 1),
               );
               const isLocked = s.num > maxReachable;
               return (
@@ -283,18 +285,18 @@ const CaseDetail = () => {
               <ChevronLeft className="h-4 w-4" /> Previous step
             </Button>
             <p className="text-xs text-muted-foreground">
-              Step {currentStage} of 9 · {CEDING_STAGES[currentStage - 1]?.label ?? ""}
+              Step {currentStage} of 10 · {CEDING_STAGES[currentStage - 1]?.label ?? ""}
             </p>
-            {isCA && currentStage < 9 ? (
+            {isCA && currentStage < 10 ? (
               <Button onClick={completeAndNext} className="gap-2" disabled={!planSupported}>
-                {currentStage === 8 ? "Mark ceding complete" : "Mark complete & continue"}
+                {currentStage === 9 ? "Mark ceding complete" : "Mark complete & continue"}
                 <ChevronRight className="h-4 w-4" />
               </Button>
-            ) : currentStage < 9 ? (
+            ) : currentStage < 10 ? (
               <Button
                 variant="outline"
                 onClick={() => goToStage(currentStage + 1)}
-                disabled={currentStage >= 9 || !planSupported}
+                disabled={currentStage >= 10 || !planSupported}
                 className="gap-2"
               >
                 Next step <ChevronRight className="h-4 w-4" />
