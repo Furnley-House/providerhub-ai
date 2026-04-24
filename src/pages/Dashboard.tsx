@@ -219,10 +219,38 @@ const Dashboard = () => {
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 mb-6">
-        <KPICard icon={Briefcase} label="Active cases" value={active} sub={`${cases.length} total`} accent="primary" />
-        <KPICard icon={CheckCircle2} label="Completed this week" value={weeklyCompleted} sub="Primary KPI" accent="success" />
-        <KPICard icon={Clock} label="In review" value={inReview} sub="Awaiting approval" accent="warning" />
-        <KPICard icon={AlertTriangle} label="On hold" value={onHold} sub="Need attention" accent={onHold > 0 ? "overdue" : "muted"} />
+        <KPICard
+          icon={Briefcase}
+          label="Active cases"
+          value={active}
+          sub={`${cases.length} total`}
+          accent="primary"
+          onClick={() => navigate("/cases?status=active")}
+        />
+        <KPICard
+          icon={CheckCircle2}
+          label="Completed this week"
+          value={weeklyCompleted}
+          sub="Primary KPI"
+          accent="success"
+          onClick={() => navigate("/cases?status=complete")}
+        />
+        <KPICard
+          icon={Clock}
+          label="In review"
+          value={inReview}
+          sub="Awaiting approval"
+          accent="warning"
+          onClick={() => navigate("/cases?status=in_review")}
+        />
+        <KPICard
+          icon={AlertTriangle}
+          label="On hold"
+          value={onHold}
+          sub="Need attention"
+          accent={onHold > 0 ? "overdue" : "muted"}
+          onClick={() => navigate("/cases?status=on_hold")}
+        />
       </div>
 
       {/* SR-ready (Zoho-confirmed ceding complete) */}
@@ -578,12 +606,14 @@ function KPICard({
   value,
   sub,
   accent,
+  onClick,
 }: {
   icon: React.ElementType;
   label: string;
   value: number;
   sub: string;
   accent: "primary" | "success" | "warning" | "overdue" | "muted";
+  onClick?: () => void;
 }) {
   const iconBg =
     accent === "primary"
@@ -597,7 +627,11 @@ function KPICard({
       : "bg-muted text-muted-foreground";
 
   return (
-    <div className="kpi-card theme-card border border-border bg-card">
+    <button
+      type="button"
+      onClick={onClick}
+      className="kpi-card theme-card border border-border bg-card text-left w-full transition-all hover:shadow-md hover:border-teal/40 hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal/40"
+    >
       <div className="flex items-center gap-3">
         <div className={`flex h-10 w-10 items-center justify-center rounded-md ${iconBg}`}>
           <Icon className="h-5 w-5" />
@@ -608,7 +642,7 @@ function KPICard({
         </div>
       </div>
       <p className="mt-3 text-[11px] text-muted-foreground">{sub}</p>
-    </div>
+    </button>
   );
 }
 

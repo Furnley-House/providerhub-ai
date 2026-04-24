@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { CheckCircle2, AlertTriangle, CircleDashed, ListChecks, ThumbsUp } from "lucide-react";
 import { ChecklistField, type ChecklistFieldState, type Confidence } from "./ChecklistField";
 import { getTemplate, groupBySection, type ChecklistFieldDef } from "@/lib/checklistTemplates";
@@ -29,6 +29,9 @@ export function ChecklistPanel({ planType, caseId, onJumpToSource }: Props) {
     template,
   });
 
+  type FieldFilter = "all" | "high" | "review" | "missing" | "approved";
+  const [filter, setFilter] = useState<FieldFilter>("all");
+
   const visibleFields = useMemo(
     () =>
       template.filter((f) => {
@@ -40,6 +43,26 @@ export function ChecklistPanel({ planType, caseId, onJumpToSource }: Props) {
   );
 
   const grouped = useMemo(() => groupBySection(visibleFields), [visibleFields]);
+
+  const matchesFilter = (key: string) => {
+    if (filter === "all") return true;
+    const r = byKey.get(key);
+    const conf = (r?.confidence ?? "MISSING").toUpperCase();
+    if (filter === "high") return conf === "HIGH";
+    if (filter === "review") return conf === "MEDIUM" || conf === "LOW";
+    if (filter === "missing") return conf === "MISSING";
+    if (filter === "approved") return r?.status === "approved";
+    return true;
+  };
+
+  const filteredGrouped = useMemo(
+    () =>
+      grouped
+        .map((g) => ({ ...g, fields: g.fields.filter((f) => matchesFilter(f.key)) }))
+        .filter((g) => g.fields.length > 0),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [grouped, filter, byKey],
+  );
 
   const stats = useMemo(() => {
     const counts = { high: 0, medium: 0, low: 0, missing: 0, approved: 0, review: 0 };
@@ -127,11 +150,53 @@ export function ChecklistPanel({ planType, caseId, onJumpToSource }: Props) {
           <div className="h-full bg-teal transition-all" style={{ width: `${stats.completion}%` }} />
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-          <SummaryChip icon={CheckCircle2} count={stats.high} label="High confidence" colour="success" />
-          <SummaryChip icon={AlertTriangle} count={stats.medium + stats.low} label="Needs review" colour="warning" />
-          <SummaryChip icon={CircleDashed} count={stats.missing} label="Missing" colour="overdue" />
-          <SummaryChip icon={ThumbsUp} count={stats.approved} label="Approved" colour="teal" />
+          <SummaryChip
+            icon={CheckCircle2}
+            count={stats.high}
+            label="High confidence"
+            colour="success"
+            active={filter === "high"}
+            onClick={() => setFilter(filter === "high" ? "all" : "high")}
+          />
+          <SummaryChip
+            icon={AlertTriangle}
+            count={stats.medium + stats.low}
+            label="Needs review"
+            colour="warning"
+            active={filter === "review"}
+            onClick={() => setFilter(filter === "review" ? "all" : "review")}
+          />
+          <SummaryChip
+            icon={CircleDashed}
+            count={stats.missing}
+            label="Missing"
+            colour="overdue"
+            active={filter === "missing"}
+            onClick={() => setFilter(filter === "missing" ? "all" : "missing")}
+          />
+          <SummaryChip
+            icon={ThumbsUp}
+            count={stats.approved}
+            label="Approved"
+            colour="teal"
+            active={filter === "approved"}
+            onClick={() => setFilter(filter === "approved" ? "all" : "approved")}
+          />
         </div>
+        {filter !== "all" && (
+          <div className="mt-3 flex items-center justify-between text-xs">
+            <span className="text-muted-foreground">
+              Showing only <strong className="text-foreground">{filter === "review" ? "needs review" : filter}</strong> fields
+            </span>
+            <button
+              type="button"
+              onClick={() => setFilter("all")}
+              className="text-teal hover:underline font-semibold"
+            >
+              Clear filter
+            </button>
+          </div>
+        )}
       </div>
 
       {canApprove && (
@@ -157,7 +222,13 @@ export function ChecklistPanel({ planType, caseId, onJumpToSource }: Props) {
       )}
 
       <div className="space-y-4">
-        {grouped.map(({ section, fields }) => (
+        {filteredGrouped.length === 0 && filter !== "all" ? (
+          <div className="rounded-md border border-dashed border-border bg-muted/20 p-8 text-center">
+            <p className="text-sm font-medium text-foreground">No fields match this filter</p>
+            <p className="text-xs text-muted-foreground mt-1">Try a different filter or clear it to see everything.</p>
+          </div>
+        ) : (
+          filteredGrouped.map(({ section, fields }) => (
           <div key={section} className="rounded-md border border-border bg-card">
             <div className="px-4 py-2 border-b border-border bg-muted/30">
               <h4 className="text-[11px] uppercase tracking-widest font-bold text-muted-foreground">
@@ -183,7 +254,8 @@ export function ChecklistPanel({ planType, caseId, onJumpToSource }: Props) {
               })}
             </div>
           </div>
-        ))}
+          ))
+        )}
       </div>
 
       {loading && (
@@ -198,11 +270,15 @@ function SummaryChip({
   count,
   label,
   colour,
+  active,
+  onClick,
 }: {
   icon: React.ElementType;
   count: number;
   label: string;
   colour: "success" | "warning" | "overdue" | "teal";
+  active?: boolean;
+  onClick?: () => void;
 }) {
   const styles: Record<string, string> = {
     success: "bg-success/10 text-success border-success/30",
@@ -210,13 +286,24 @@ function SummaryChip({
     overdue: "bg-overdue/10 text-overdue border-overdue/30",
     teal: "bg-teal/10 text-teal border-teal/30",
   };
+  const ringStyles: Record<string, string> = {
+    success: "ring-2 ring-success/60",
+    warning: "ring-2 ring-warning/60",
+    overdue: "ring-2 ring-overdue/60",
+    teal: "ring-2 ring-teal/60",
+  };
   return (
-    <div className={`flex items-center gap-2 px-2.5 py-1.5 rounded border ${styles[colour]}`}>
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`flex items-center gap-2 px-2.5 py-1.5 rounded border text-left transition-all hover:shadow-sm ${styles[colour]} ${active ? ringStyles[colour] : "opacity-90 hover:opacity-100"}`}
+    >
       <Icon className="h-3.5 w-3.5 shrink-0" />
       <div className="leading-tight">
         <p className="font-bold text-sm text-foreground">{count}</p>
         <p className="text-[10px] text-muted-foreground">{label}</p>
       </div>
-    </div>
+    </button>
   );
 }

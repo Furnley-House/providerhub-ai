@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useMemo, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Search,
@@ -37,13 +37,21 @@ const ZOHO_SAMPLES = [
 
 const Cases = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const qc = useQueryClient();
   const { userName, role } = useRole();
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>(searchParams.get("status") ?? "all");
   const [planFilter, setPlanFilter] = useState<string>("all");
   const [ragFilter, setRagFilter] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
+
+  // Sync filter state from URL (so dashboard KPI clicks land here pre-filtered)
+  useEffect(() => {
+    const s = searchParams.get("status");
+    if (s && s !== statusFilter) setStatusFilter(s);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const [form, setForm] = useState({
     client_name: "",
@@ -107,7 +115,11 @@ const Cases = () => {
       // CA team only sees tasks assigned to them in Zoho CRM.
       if (role === "ca_team" && (c.owner_name ?? "").trim() !== (userName ?? "").trim())
         return false;
-      if (statusFilter !== "all" && c.status !== statusFilter) return false;
+      if (statusFilter === "active") {
+        if (["complete", "approved"].includes(c.status)) return false;
+      } else if (statusFilter !== "all" && c.status !== statusFilter) {
+        return false;
+      }
       if (planFilter !== "all" && c.plan_type !== planFilter) return false;
       if (ragFilter !== "all" && calculateRag(c) !== ragFilter) return false;
       if (q && !`${c.client_name} ${c.provider_name} ${c.plan_number} ${c.case_ref}`.toLowerCase().includes(q))
@@ -195,8 +207,19 @@ const Cases = () => {
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by client, provider, policy ref…" className="pl-9" />
         </div>
-        <FilterSelect value={statusFilter} onChange={setStatusFilter} placeholder="Status">
+        <FilterSelect
+          value={statusFilter}
+          onChange={(v) => {
+            setStatusFilter(v);
+            const next = new URLSearchParams(searchParams);
+            if (v === "all") next.delete("status");
+            else next.set("status", v);
+            setSearchParams(next, { replace: true });
+          }}
+          placeholder="Status"
+        >
           <SelectItem value="all">All statuses</SelectItem>
+          <SelectItem value="active">Active (in progress)</SelectItem>
           {CASE_STATUSES.map((s) => (
             <SelectItem key={s} value={s}>
               {STATUS_LABELS[s]}
