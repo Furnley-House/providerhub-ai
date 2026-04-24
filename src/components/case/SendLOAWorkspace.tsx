@@ -82,7 +82,7 @@ export function SendLOAWorkspace({ caseItem }: Props) {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const subject = `Letter of Authority — ${caseItem.client_name} — ${caseItem.plan_number}`;
+  const subject = `Letter of Authority - ${caseItem.client_name} - ${caseItem.plan_number}`;
   const initialBody = `Dear ${provider?.name ?? caseItem.provider_name} Team,
 
 Please find attached a signed Letter of Authority for the following client:
@@ -108,21 +108,21 @@ Could you please confirm receipt and provide an expected turnaround for the poli
 Kind regards,
 ProviderHub`;
 
+  // Use encodeURIComponent (not URLSearchParams) so spaces become %20 instead of "+".
+  // Outlook Web's deeplink renders "+" literally in the body.
   const buildMailto = (body: string) => {
     const to = routing.email ?? provider?.email ?? "";
-    const params = new URLSearchParams({ subject, body });
-    return `mailto:${to}?${params.toString()}`;
+    return `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   };
 
   const buildOutlookWebUrl = (body: string) => {
     const to = routing.email ?? provider?.email ?? "";
-    const params = new URLSearchParams({
-      path: "/mail/action/compose",
-      to,
-      subject,
-      body,
-    });
-    return `https://outlook.office.com/mail/deeplink/compose?${params.toString()}`;
+    const qs =
+      `path=${encodeURIComponent("/mail/action/compose")}` +
+      `&to=${encodeURIComponent(to)}` +
+      `&subject=${encodeURIComponent(subject)}` +
+      `&body=${encodeURIComponent(body)}`;
+    return `https://outlook.office.com/mail/deeplink/compose?${qs}`;
   };
 
   const copy = async (text: string, label: string) => {
