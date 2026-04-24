@@ -344,16 +344,35 @@ function OrigoPanel({
           Origo portal
         </p>
         <p className="text-sm text-foreground">{provider.name}</p>
-        {provider.portalUrl && (
-          <a
-            href={provider.portalUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="mt-2 inline-flex items-center gap-1.5 text-sm text-teal hover:underline"
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <Button
+            asChild
+            size="sm"
+            className="gap-1.5"
           >
-            Open Origo portal <ExternalLink className="h-3.5 w-3.5" />
-          </a>
-        )}
+            <a
+              href="https://loa.unipass.co.uk/login"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <Globe className="h-4 w-4" /> Proceed with Origo (Unipass)
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+          </Button>
+          {provider.portalUrl && (
+            <a
+              href={provider.portalUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs text-teal hover:underline"
+            >
+              Provider portal <ExternalLink className="h-3 w-3" />
+            </a>
+          )}
+        </div>
+        <p className="text-[11px] text-muted-foreground mt-1">
+          Submit the LOA on Unipass, then paste the Origo reference below.
+        </p>
       </div>
 
       <div>
