@@ -117,6 +117,7 @@ export function StageCaseDetails({ caseItem }: StageProps) {
 }
 
 export function StageDocumentUpload({ caseItem }: StageProps) {
+  // (Stage 3 — see StageSendLOA above for stage 2)
   const { documents, removeDocument, refresh } = useDocuments(caseItem.id);
   return (
     <StagePanel
