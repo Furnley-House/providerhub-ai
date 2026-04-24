@@ -196,7 +196,7 @@ const CaseDetail = () => {
                     year: "numeric",
                   })}
                 />
-                <HeaderField label="Stage" value={`${currentStage} of 9`} />
+                <HeaderField label="Stage" value={`${currentStage} of 10`} />
                 <HeaderField label="RAG" value={RAG_STYLES[rag].label} />
               </div>
             </div>
@@ -211,7 +211,7 @@ const CaseDetail = () => {
               const isCurrent = currentStage === s.num;
               const maxReachable = Math.max(
                 currentStage,
-                Math.min(9, (stagesCompleted.length > 0 ? Math.max(...stagesCompleted) : 0) + 1),
+                Math.min(10, (stagesCompleted.length > 0 ? Math.max(...stagesCompleted) : 0) + 1),
               );
               const isLocked = s.num > maxReachable;
               return (
@@ -285,18 +285,18 @@ const CaseDetail = () => {
               <ChevronLeft className="h-4 w-4" /> Previous step
             </Button>
             <p className="text-xs text-muted-foreground">
-              Step {currentStage} of 9 · {CEDING_STAGES[currentStage - 1]?.label ?? ""}
+              Step {currentStage} of 10 · {CEDING_STAGES[currentStage - 1]?.label ?? ""}
             </p>
-            {isCA && currentStage < 9 ? (
+            {isCA && currentStage < 10 ? (
               <Button onClick={completeAndNext} className="gap-2" disabled={!planSupported}>
-                {currentStage === 8 ? "Mark ceding complete" : "Mark complete & continue"}
+                {currentStage === 9 ? "Mark ceding complete" : "Mark complete & continue"}
                 <ChevronRight className="h-4 w-4" />
               </Button>
-            ) : currentStage < 9 ? (
+            ) : currentStage < 10 ? (
               <Button
                 variant="outline"
                 onClick={() => goToStage(currentStage + 1)}
-                disabled={currentStage >= 9 || !planSupported}
+                disabled={currentStage >= 10 || !planSupported}
                 className="gap-2"
               >
                 Next step <ChevronRight className="h-4 w-4" />
