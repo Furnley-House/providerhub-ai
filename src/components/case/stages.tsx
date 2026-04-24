@@ -392,10 +392,14 @@ function SummaryTile({
   label,
   value,
   tone = "muted",
+  active,
+  onClick,
 }: {
   label: string;
   value: number;
   tone?: "muted" | "success" | "warning";
+  active?: boolean;
+  onClick?: () => void;
 }) {
   const toneClass =
     tone === "success"
@@ -403,11 +407,23 @@ function SummaryTile({
       : tone === "warning"
       ? "text-warning"
       : "text-foreground";
+  const ringClass = active
+    ? tone === "success"
+      ? "ring-2 ring-success/60"
+      : tone === "warning"
+      ? "ring-2 ring-warning/60"
+      : "ring-2 ring-teal/60"
+    : "hover:border-teal/40";
   return (
-    <div className="rounded-md border border-border bg-card p-3 text-center">
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`rounded-md border border-border bg-card p-3 text-center transition-all hover:shadow-sm ${ringClass}`}
+    >
       <p className={`text-2xl font-bold theme-heading ${toneClass}`}>{value}</p>
       <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mt-0.5">{label}</p>
-    </div>
+    </button>
   );
 }
 
