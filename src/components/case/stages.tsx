@@ -182,6 +182,9 @@ export function StageReviewChecklist({ caseItem }: StageProps) {
   const template = useMemo(() => getTemplate(caseItem.plan_type), [caseItem.plan_type]);
   const { rows, loading } = useChecklistFields({ caseId: caseItem.id, template });
 
+  type ReviewFilter = "all" | "filled" | "missing";
+  const [filter, setFilter] = useState<ReviewFilter>("all");
+
   const totals = useMemo(() => {
     const total = rows.length;
     const filled = rows.filter((r) => r.value && r.value.trim().length > 0).length;
@@ -190,6 +193,20 @@ export function StageReviewChecklist({ caseItem }: StageProps) {
   }, [rows]);
 
   const grouped = useMemo(() => groupBySection(template), [template]);
+
+  const filteredGrouped = useMemo(() => {
+    if (filter === "all") return grouped;
+    return grouped
+      .map(({ section, fields }) => ({
+        section,
+        fields: fields.filter((f) => {
+          const row = rows.find((r) => r.field_key === f.key);
+          const isFilled = !!row?.value && row.value.trim().length > 0;
+          return filter === "filled" ? isFilled : !isFilled;
+        }),
+      }))
+      .filter((g) => g.fields.length > 0);
+  }, [grouped, rows, filter]);
 
   const sendMutation = useMutation({
     mutationFn: async () => {
@@ -248,17 +265,55 @@ export function StageReviewChecklist({ caseItem }: StageProps) {
       <div className="space-y-4">
         {/* Summary tiles */}
         <div className="grid grid-cols-3 gap-3">
-          <SummaryTile label="Total fields" value={totals.total} />
-          <SummaryTile label="Filled" value={totals.filled} tone="success" />
-          <SummaryTile label="Missing" value={totals.missing} tone={totals.missing > 0 ? "warning" : "muted"} />
+          <SummaryTile
+            label="Total fields"
+            value={totals.total}
+            active={filter === "all"}
+            onClick={() => setFilter("all")}
+          />
+          <SummaryTile
+            label="Filled"
+            value={totals.filled}
+            tone="success"
+            active={filter === "filled"}
+            onClick={() => setFilter(filter === "filled" ? "all" : "filled")}
+          />
+          <SummaryTile
+            label="Missing"
+            value={totals.missing}
+            tone={totals.missing > 0 ? "warning" : "muted"}
+            active={filter === "missing"}
+            onClick={() => setFilter(filter === "missing" ? "all" : "missing")}
+          />
         </div>
+        {filter !== "all" && (
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-muted-foreground">
+              Showing only <strong className="text-foreground">{filter}</strong> fields
+            </span>
+            <button
+              type="button"
+              onClick={() => setFilter("all")}
+              className="text-teal hover:underline font-semibold"
+            >
+              Clear filter
+            </button>
+          </div>
+        )}
 
         {/* Sections */}
         {loading ? (
           <p className="text-sm text-muted-foreground">Loading checklist…</p>
+        ) : filteredGrouped.length === 0 ? (
+          <div className="rounded-md border border-dashed border-border bg-muted/20 p-8 text-center">
+            <p className="text-sm font-medium text-foreground">No fields match this filter</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {filter === "missing" ? "Every field is filled — nice!" : "Nothing filled yet."}
+            </p>
+          </div>
         ) : (
           <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1 scrollbar-thin">
-            {grouped.map(({ section, fields }) => (
+            {filteredGrouped.map(({ section, fields }) => (
               <div key={section} className="rounded-md border border-border bg-card">
                 <div className="px-3 py-2 border-b border-border bg-muted/30">
                   <h4 className="text-[11px] uppercase tracking-widest font-bold text-muted-foreground">{section}</h4>
