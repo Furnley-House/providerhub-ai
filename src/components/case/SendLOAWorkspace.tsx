@@ -437,6 +437,7 @@ function EmailPanel({
   initialBody,
   followUpBody,
   buildMailto,
+  buildOutlookWebUrl,
   copy,
   notes,
   setNotes,
@@ -453,6 +454,7 @@ function EmailPanel({
   initialBody: string;
   followUpBody: string;
   buildMailto: (body: string) => string;
+  buildOutlookWebUrl: (body: string) => string;
   copy: (text: string, label: string) => void;
   notes: string;
   setNotes: (v: string) => void;
@@ -536,8 +538,14 @@ function EmailPanel({
 
       <div className="flex flex-wrap gap-2">
         <Button asChild className="gap-1.5">
+          <a href={buildOutlookWebUrl(body)} target="_blank" rel="noreferrer">
+            <Mail className="h-4 w-4" /> Open in Outlook Web
+            <ExternalLink className="h-3.5 w-3.5" />
+          </a>
+        </Button>
+        <Button asChild variant="outline" className="gap-1.5">
           <a href={buildMailto(body)}>
-            <Mail className="h-4 w-4" /> Open in Outlook
+            <Mail className="h-4 w-4" /> Open in desktop mail
           </a>
         </Button>
         <Button variant="outline" onClick={() => copy(body, "Body")} className="gap-1.5">
