@@ -11,6 +11,7 @@ import {
   Download,
   Sparkles,
 } from "lucide-react";
+import { Mail } from "lucide-react";
 import { SendLOAWorkspace } from "./SendLOAWorkspace";
 import { DocumentUploader } from "./DocumentUploader";
 import { DocumentList } from "./DocumentList";
