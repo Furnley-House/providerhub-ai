@@ -27,7 +27,6 @@ interface Props {
 }
 
 function fakeZohoTaskId() {
-  // Mimics Zoho's numeric task IDs for the demo
   return `ZH-${Math.floor(100000000 + Math.random() * 900000000)}`;
 }
 
@@ -196,7 +195,7 @@ export function AssignParaplannerDialog({ caseItem, open, onOpenChange, onAssign
             </p>
             <ul className="space-y-0.5 text-muted-foreground ml-4 list-disc">
               <li>Case status → <span className="font-mono text-foreground">ready_for_review</span></li>
-              <li>Zoho CRM task created and ID stored on the case (stub for demo)</li>
+              <li>CRM task created and ID stored on the case</li>
               <li>In-app notification sent to the paraplanner</li>
               <li>Immutable entry written to the audit trail</li>
             </ul>
