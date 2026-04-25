@@ -8,7 +8,6 @@ import {
   CheckCircle2,
   Clock,
   TrendingUp,
-  Timer,
   ArrowRight,
   ExternalLink,
   Loader2,
@@ -18,7 +17,7 @@ import {
   ChevronUp,
 } from "lucide-react";
 import { useState } from "react";
-import { getCases, getTasks, updateCase } from "@/services/api";
+import { getCases, updateCase } from "@/services/api";
 import { supabase } from "@/integrations/supabase/client";
 import { useRole } from "@/hooks/useRole";
 import { calculateRag, RAG_STYLES, STATUS_LABELS, STATUS_STYLES } from "@/lib/caseHelpers";
@@ -35,7 +34,6 @@ const Dashboard = () => {
   const [expandedClients, setExpandedClients] = useState<Set<string>>(new Set());
 
   const { data: cases = [], isLoading } = useQuery({ queryKey: ["cases"], queryFn: getCases });
-  const { data: tasks = [] } = useQuery({ queryKey: ["tasks"], queryFn: () => getTasks() });
 
   // CA team members only see tasks assigned to them (mirrors CRM
   // ownership). Advisers/paraplanners/admins see everything.
@@ -63,14 +61,6 @@ const Dashboard = () => {
   const inReview = myCases.filter((c) => c.status === "in_review").length;
   const onHold = myCases.filter((c) => c.status === "on_hold").length;
   const active = myCases.filter((c) => !["complete", "approved"].includes(c.status)).length;
-  const activeCaseHours = myCases
-    .filter((c) => !["complete", "approved"].includes(c.status))
-    .map((c) => Math.max(0, today.getTime() - new Date(c.created_at).getTime()) / 36e5);
-  const avgActiveHours = average(activeCaseHours);
-  const completedTaskHours = (tasks as any[])
-    .filter((t) => t.completed && t.created_at && t.updated_at)
-    .map((t) => Math.max(0, new Date(t.updated_at).getTime() - new Date(t.created_at).getTime()) / 36e5);
-  const avgTaskHours = average(completedTaskHours);
 
   const recent = [...myCases]
     .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
@@ -226,7 +216,7 @@ const Dashboard = () => {
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-4 xl:grid-cols-6 mb-6">
+      <div className="grid grid-cols-2 gap-4 xl:grid-cols-4 mb-6">
         <KPICard
           icon={Briefcase}
           label="Active cases"
@@ -258,23 +248,6 @@ const Dashboard = () => {
           sub="Need attention"
           accent={onHold > 0 ? "overdue" : "muted"}
           onClick={() => navigate("/cases?status=on_hold")}
-        />
-        <KPICard
-          icon={Timer}
-          label="Avg active hours"
-          value={avgActiveHours}
-          sub="Open case duration"
-          accent={avgActiveHours > 72 ? "warning" : "primary"}
-          suffix="h"
-          onClick={() => navigate("/cases?status=active")}
-        />
-        <KPICard
-          icon={TrendingUp}
-          label="Avg task time"
-          value={avgTaskHours}
-          sub="Completed task cycle"
-          accent={avgTaskHours > 24 ? "warning" : "success"}
-          suffix="h"
         />
       </div>
 
@@ -624,11 +597,6 @@ const Dashboard = () => {
     </div>
   );
 };
-
-function average(values: number[]) {
-  if (values.length === 0) return 0;
-  return Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
-}
 
 function KPICard({
   icon: Icon,
