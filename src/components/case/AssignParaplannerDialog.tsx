@@ -108,14 +108,14 @@ export function AssignParaplannerDialog({ caseItem, open, onOpenChange, onAssign
         new_value: `${pp.full_name} (paraplanner)`,
         actor_name: userName,
         actor_role: role,
-        notes: note.trim() || `Zoho task ${zohoId} · due ${dueDate}`,
+        notes: note.trim() || `CRM task ${zohoId} · due ${dueDate}`,
       });
 
       return { paraplanner: pp, zohoId };
     },
     onSuccess: ({ paraplanner, zohoId }) => {
       toast.success(`Assigned to ${paraplanner.full_name}`, {
-        description: `Zoho task ${zohoId} created · paraplanner notified.`,
+        description: `CRM task ${zohoId} created · paraplanner notified.`,
       });
       qc.invalidateQueries({ queryKey: ["case", caseItem.id] });
       qc.invalidateQueries({ queryKey: ["cases"] });
@@ -134,7 +134,7 @@ export function AssignParaplannerDialog({ caseItem, open, onOpenChange, onAssign
             Assign to paraplanner
           </DialogTitle>
           <DialogDescription>
-            Hand off <strong className="text-foreground">{caseItem.client_name}</strong> for review. The paraplanner will be notified in-app and a Zoho CRM task is created.
+            Hand off <strong className="text-foreground">{caseItem.client_name}</strong> for review. The paraplanner will be notified in-app and a CRM task is created.
           </DialogDescription>
         </DialogHeader>
 
