@@ -7,6 +7,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   Clock,
+  TrendingUp,
   ArrowRight,
   ExternalLink,
   Loader2,
