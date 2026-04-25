@@ -11,7 +11,7 @@ import { calculateRag, RAG_STYLES, STATUS_LABELS, STATUS_STYLES, type CaseRow } 
 
 const MyInbox = () => {
   const { userName } = useRole();
-  // Match logged-in paraplanner by name (demo)
+  // Match logged-in paraplanner by name.
   const me = useMemo(
     () => PARAPLANNERS.find((p) => p.full_name === userName) ?? PARAPLANNERS[0],
     [userName],
