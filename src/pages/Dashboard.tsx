@@ -228,7 +228,7 @@ const Dashboard = () => {
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 mb-6">
+      <div className="grid grid-cols-2 gap-4 xl:grid-cols-6 mb-6">
         <KPICard
           icon={Briefcase}
           label="Active cases"
@@ -261,6 +261,23 @@ const Dashboard = () => {
           accent={onHold > 0 ? "overdue" : "muted"}
           onClick={() => navigate("/cases?status=on_hold")}
         />
+        <KPICard
+          icon={Timer}
+          label="Avg active hours"
+          value={avgActiveHours}
+          sub="Open case duration"
+          accent={avgActiveHours > 72 ? "warning" : "primary"}
+          suffix="h"
+          onClick={() => navigate("/cases?status=active")}
+        />
+        <KPICard
+          icon={TrendingUp}
+          label="Avg task time"
+          value={avgTaskHours}
+          sub="Completed task cycle"
+          accent={avgTaskHours > 24 ? "warning" : "success"}
+          suffix="h"
+        />
       </div>
 
       {/* SR-ready (Zoho-confirmed ceding complete) */}
@@ -283,14 +300,14 @@ const Dashboard = () => {
             className="gap-2 shrink-0"
           >
             {syncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-            Sync Zoho
+             Sync CRM
           </Button>
         </div>
         {srReady.length === 0 ? (
           <div className="px-5 py-8 text-center">
             <p className="text-sm text-foreground font-medium">No cases ready for SR</p>
             <p className="text-xs text-muted-foreground mt-1">
-              Cases appear here once Zoho CRM confirms ceding is complete.
+              Cases appear here once ceding is confirmed complete.
             </p>
           </div>
         ) : (
@@ -314,7 +331,7 @@ const Dashboard = () => {
                     {c.zoho_task_id && (
                       <>
                         {" · "}
-                        <span className="font-mono">Zoho {c.zoho_task_id}</span>
+                        <span className="font-mono">Task {c.zoho_task_id}</span>
                       </>
                     )}
                   </p>
@@ -528,7 +545,7 @@ const Dashboard = () => {
               <Briefcase className="mx-auto mb-3 h-10 w-10 text-muted-foreground/40" />
               <p className="text-sm font-medium text-foreground">No ceding cases yet</p>
               <p className="text-xs text-muted-foreground mt-1 mb-4">
-                Click "Load Demo Data" above to populate sample cases.
+                Create a case to start tracking ceding work.
               </p>
             </div>
           ) : (
@@ -599,7 +616,7 @@ const Dashboard = () => {
                   onClick={() => seedMutation.mutate()}
                   className="w-full text-left text-xs px-3 py-2 rounded-md border border-border hover:bg-muted transition-colors"
                 >
-                  Load 5 demo cases
+                  Load starter cases
                 </button>
               )}
             </div>
