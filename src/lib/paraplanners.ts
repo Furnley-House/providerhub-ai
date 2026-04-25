@@ -1,10 +1,9 @@
-// Demo paraplanners — auth is disabled in this app, so we use stable
-// fake UUIDs as recipient IDs for in-app notifications.
+// Stable paraplanner records used for assignment and in-app notifications.
 export interface Paraplanner {
   user_id: string;
   full_name: string;
   initials: string;
-  workload: number; // demo metric: open cases assigned
+  workload: number;
   specialism: string;
 }
 

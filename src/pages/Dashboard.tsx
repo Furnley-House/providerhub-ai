@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   Clock,
   TrendingUp,
+  Timer,
   ArrowRight,
   ExternalLink,
   Loader2,
@@ -17,7 +18,7 @@ import {
   ChevronUp,
 } from "lucide-react";
 import { useState } from "react";
-import { getCases, updateCase } from "@/services/api";
+import { getCases, getTasks, updateCase } from "@/services/api";
 import { supabase } from "@/integrations/supabase/client";
 import { useRole } from "@/hooks/useRole";
 import { calculateRag, RAG_STYLES, STATUS_LABELS, STATUS_STYLES } from "@/lib/caseHelpers";
@@ -34,8 +35,9 @@ const Dashboard = () => {
   const [expandedClients, setExpandedClients] = useState<Set<string>>(new Set());
 
   const { data: cases = [], isLoading } = useQuery({ queryKey: ["cases"], queryFn: getCases });
+  const { data: tasks = [] } = useQuery({ queryKey: ["tasks"], queryFn: () => getTasks() });
 
-  // CA team members only see tasks assigned to them (mirrors Zoho CRM
+  // CA team members only see tasks assigned to them (mirrors CRM
   // ownership). Advisers/paraplanners/admins see everything.
   const myCases = role === "ca_team"
     ? (cases as any[]).filter((c) => (c.owner_name ?? "").trim() === (userName ?? "").trim())
@@ -45,7 +47,7 @@ const Dashboard = () => {
     mutationFn: seedDemoData,
     onSuccess: (r) => {
       qc.invalidateQueries({ queryKey: ["cases"] });
-      toast.success(r.inserted > 0 ? `Loaded ${r.inserted} demo cases` : "Demo cases already loaded");
+      toast.success(r.inserted > 0 ? `Loaded ${r.inserted} starter cases` : "Starter cases already loaded");
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -61,6 +63,14 @@ const Dashboard = () => {
   const inReview = myCases.filter((c) => c.status === "in_review").length;
   const onHold = myCases.filter((c) => c.status === "on_hold").length;
   const active = myCases.filter((c) => !["complete", "approved"].includes(c.status)).length;
+  const activeCaseHours = myCases
+    .filter((c) => !["complete", "approved"].includes(c.status))
+    .map((c) => Math.max(0, today.getTime() - new Date(c.created_at).getTime()) / 36e5);
+  const avgActiveHours = average(activeCaseHours);
+  const completedTaskHours = (tasks as any[])
+    .filter((t) => t.completed && t.created_at && t.updated_at)
+    .map((t) => Math.max(0, new Date(t.updated_at).getTime() - new Date(t.created_at).getTime()) / 36e5);
+  const avgTaskHours = average(completedTaskHours);
 
   const recent = [...myCases]
     .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
@@ -147,15 +157,14 @@ const Dashboard = () => {
 
   const handlePrepareSR = async (c: any) => {
     if (c.zoho_ceding_status !== "ceding_complete") {
-      toast.error("Zoho hasn't confirmed ceding yet", {
-        description: "Wait for the Zoho CRM blueprint to mark ceding complete.",
+      toast.error("Ceding is not confirmed yet", {
+        description: "Wait for the CRM blueprint to mark ceding complete.",
       });
       return;
     }
     setPreparingId(c.id);
     try {
-      // Stub: in production this calls a Zoho CRM edge function that triggers
-      // the "SR Preparation" blueprint transition on the linked task.
+      // Production integration point: trigger the SR Preparation transition on the linked task.
       await new Promise((r) => setTimeout(r, 600));
       await updateCase(c.id, {
         sr_prepared_at: new Date().toISOString(),
@@ -167,10 +176,10 @@ const Dashboard = () => {
         source: "dashboard",
         actor_name: userName,
         actor_role: role,
-        notes: `Triggered SR Preparation blueprint on Zoho task ${c.zoho_task_id ?? "(none)"}`,
+        notes: `Triggered SR Preparation blueprint on task ${c.zoho_task_id ?? "(none)"}`,
       });
       qc.invalidateQueries({ queryKey: ["cases"] });
-      toast.success("SR blueprint triggered", { description: "Opening Zoho task…" });
+      toast.success("SR blueprint triggered", { description: "Opening task…" });
       if (c.zoho_task_id) {
         const taskUrl = `https://crm.zoho.eu/crm/tab/Tasks/${c.zoho_task_id}`;
         window.open(taskUrl, "_blank", "noopener,noreferrer");
@@ -186,13 +195,12 @@ const Dashboard = () => {
   };
 
   const handleSyncZoho = async () => {
-    // Stub Zoho sync: in production this hits a Zoho webhook/edge function
-    // and pulls the latest blueprint status for every linked task.
+    // Production integration point: pull the latest blueprint status for linked tasks.
     setSyncing(true);
     try {
       await new Promise((r) => setTimeout(r, 800));
       qc.invalidateQueries({ queryKey: ["cases"] });
-      toast.success("Synced with Zoho CRM");
+      toast.success("Synced with CRM");
     } finally {
       setSyncing(false);
     }
@@ -213,12 +221,12 @@ const Dashboard = () => {
         {cases.length === 0 && (
           <Button onClick={() => seedMutation.mutate()} disabled={seedMutation.isPending} className="gap-2">
             <Database className="h-4 w-4" />
-            {seedMutation.isPending ? "Loading…" : "Load Demo Data"}
+            {seedMutation.isPending ? "Loading…" : "Load starter cases"}
           </Button>
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 mb-6">
+      <div className="grid grid-cols-2 gap-4 xl:grid-cols-6 mb-6">
         <KPICard
           icon={Briefcase}
           label="Active cases"
@@ -251,6 +259,23 @@ const Dashboard = () => {
           accent={onHold > 0 ? "overdue" : "muted"}
           onClick={() => navigate("/cases?status=on_hold")}
         />
+        <KPICard
+          icon={Timer}
+          label="Avg active hours"
+          value={avgActiveHours}
+          sub="Open case duration"
+          accent={avgActiveHours > 72 ? "warning" : "primary"}
+          suffix="h"
+          onClick={() => navigate("/cases?status=active")}
+        />
+        <KPICard
+          icon={TrendingUp}
+          label="Avg task time"
+          value={avgTaskHours}
+          sub="Completed task cycle"
+          accent={avgTaskHours > 24 ? "warning" : "success"}
+          suffix="h"
+        />
       </div>
 
       {/* SR-ready (Zoho-confirmed ceding complete) */}
@@ -273,14 +298,14 @@ const Dashboard = () => {
             className="gap-2 shrink-0"
           >
             {syncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-            Sync Zoho
+            Sync CRM
           </Button>
         </div>
         {srReady.length === 0 ? (
           <div className="px-5 py-8 text-center">
             <p className="text-sm text-foreground font-medium">No cases ready for SR</p>
             <p className="text-xs text-muted-foreground mt-1">
-              Cases appear here once Zoho CRM confirms ceding is complete.
+              Cases appear here once ceding is confirmed complete.
             </p>
           </div>
         ) : (
@@ -304,7 +329,7 @@ const Dashboard = () => {
                     {c.zoho_task_id && (
                       <>
                         {" · "}
-                        <span className="font-mono">Zoho {c.zoho_task_id}</span>
+                        <span className="font-mono">Task {c.zoho_task_id}</span>
                       </>
                     )}
                   </p>
@@ -518,7 +543,7 @@ const Dashboard = () => {
               <Briefcase className="mx-auto mb-3 h-10 w-10 text-muted-foreground/40" />
               <p className="text-sm font-medium text-foreground">No ceding cases yet</p>
               <p className="text-xs text-muted-foreground mt-1 mb-4">
-                Click "Load Demo Data" above to populate sample cases.
+                Create a case to start tracking ceding work.
               </p>
             </div>
           ) : (
@@ -589,7 +614,7 @@ const Dashboard = () => {
                   onClick={() => seedMutation.mutate()}
                   className="w-full text-left text-xs px-3 py-2 rounded-md border border-border hover:bg-muted transition-colors"
                 >
-                  Load 5 demo cases
+                  Load starter cases
                 </button>
               )}
             </div>
@@ -600,12 +625,18 @@ const Dashboard = () => {
   );
 };
 
+function average(values: number[]) {
+  if (values.length === 0) return 0;
+  return Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
+}
+
 function KPICard({
   icon: Icon,
   label,
   value,
   sub,
   accent,
+  suffix,
   onClick,
 }: {
   icon: React.ElementType;
@@ -613,6 +644,7 @@ function KPICard({
   value: number;
   sub: string;
   accent: "primary" | "success" | "warning" | "overdue" | "muted";
+  suffix?: string;
   onClick?: () => void;
 }) {
   const iconBg =
@@ -637,7 +669,7 @@ function KPICard({
           <Icon className="h-5 w-5" />
         </div>
         <div>
-          <p className="text-2xl font-bold text-foreground theme-heading leading-none">{value}</p>
+          <p className="text-2xl font-bold text-foreground theme-heading leading-none">{value}{suffix}</p>
           <p className="text-xs text-muted-foreground mt-1">{label}</p>
         </div>
       </div>

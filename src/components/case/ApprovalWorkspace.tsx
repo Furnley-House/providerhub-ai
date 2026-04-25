@@ -246,7 +246,7 @@ export function ApprovalWorkspace({ caseItem }: Props) {
         notes: "All fields approved · case marked complete by reviewer.",
       });
 
-      // Notify CA team owner if known (demo: notify all CA roles via recipient_role)
+      // Notify CA team owner if known.
       await supabase.from("notifications").insert({
         recipient_user_id: "00000000-0000-0000-0000-000000000000",
         recipient_role: "ca_team",

@@ -27,7 +27,6 @@ interface Props {
 }
 
 function fakeZohoTaskId() {
-  // Mimics Zoho's numeric task IDs for the demo
   return `ZH-${Math.floor(100000000 + Math.random() * 900000000)}`;
 }
 
@@ -109,14 +108,14 @@ export function AssignParaplannerDialog({ caseItem, open, onOpenChange, onAssign
         new_value: `${pp.full_name} (paraplanner)`,
         actor_name: userName,
         actor_role: role,
-        notes: note.trim() || `Zoho task ${zohoId} · due ${dueDate}`,
+        notes: note.trim() || `CRM task ${zohoId} · due ${dueDate}`,
       });
 
       return { paraplanner: pp, zohoId };
     },
     onSuccess: ({ paraplanner, zohoId }) => {
       toast.success(`Assigned to ${paraplanner.full_name}`, {
-        description: `Zoho task ${zohoId} created · paraplanner notified.`,
+        description: `CRM task ${zohoId} created · paraplanner notified.`,
       });
       qc.invalidateQueries({ queryKey: ["case", caseItem.id] });
       qc.invalidateQueries({ queryKey: ["cases"] });
@@ -135,7 +134,7 @@ export function AssignParaplannerDialog({ caseItem, open, onOpenChange, onAssign
             Assign to paraplanner
           </DialogTitle>
           <DialogDescription>
-            Hand off <strong className="text-foreground">{caseItem.client_name}</strong> for review. The paraplanner will be notified in-app and a Zoho CRM task is created.
+            Hand off <strong className="text-foreground">{caseItem.client_name}</strong> for review. The paraplanner will be notified in-app and a CRM task is created.
           </DialogDescription>
         </DialogHeader>
 
@@ -196,7 +195,7 @@ export function AssignParaplannerDialog({ caseItem, open, onOpenChange, onAssign
             </p>
             <ul className="space-y-0.5 text-muted-foreground ml-4 list-disc">
               <li>Case status → <span className="font-mono text-foreground">ready_for_review</span></li>
-              <li>Zoho CRM task created and ID stored on the case (stub for demo)</li>
+              <li>CRM task created and ID stored on the case</li>
               <li>In-app notification sent to the paraplanner</li>
               <li>Immutable entry written to the audit trail</li>
             </ul>

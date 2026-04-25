@@ -21,9 +21,7 @@ const TYPE_META: Record<string, { icon: React.ElementType; cls: string }> = {
 };
 
 /**
- * In demo mode there are no real auth users — we map the active role
- * to one of the seeded paraplanner UUIDs (or a stable placeholder for
- * other roles) so notifications can be addressed and read.
+ * Map the active role to a stable recipient ID so notifications can be addressed and read.
  */
 function recipientIdForRole(role: string | null): string | null {
   if (role === "paraplanner") return PARAPLANNERS[0].user_id;

@@ -156,7 +156,7 @@ export function AppHeader() {
               <Settings className="mr-2 h-4 w-4" /> Admin Panel
             </DropdownMenuItem>
             <DropdownMenuItem onClick={clearRole}>
-              <RefreshCw className="mr-2 h-4 w-4" /> Switch role (demo)
+              <RefreshCw className="mr-2 h-4 w-4" /> Switch role
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={clearRole}>

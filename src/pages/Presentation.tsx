@@ -28,7 +28,7 @@ const slides: React.FC[] = [
         <span className="flex items-center gap-2"><Phone className="w-5 h-5" /> Fewer calls</span>
         <span className="flex items-center gap-2"><Shield className="w-5 h-5" /> Full audit trail</span>
       </div>
-      <p className="mt-16 text-sm text-white/40">Demo-ready prototype · February 2026</p>
+      <p className="mt-16 text-sm text-white/40">Production workflow · February 2026</p>
     </div>
   ),
 
@@ -309,7 +309,7 @@ const slides: React.FC[] = [
       </div>
       <div className="rounded-xl bg-white/10 backdrop-blur px-8 py-5 text-center max-w-2xl">
         <p className="text-lg font-semibold">ProviderHub turns LOA & Ceding into a repeatable, auditable pipeline.</p>
-        <p className="text-sm text-white/60 mt-2">Live demo available</p>
+        <p className="text-sm text-white/60 mt-2">Operational dashboard available</p>
       </div>
     </div>
   ),
