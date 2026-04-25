@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   Clock,
   TrendingUp,
+  Timer,
   ArrowRight,
   ExternalLink,
   Loader2,
@@ -17,7 +18,7 @@ import {
   ChevronUp,
 } from "lucide-react";
 import { useState } from "react";
-import { getCases, updateCase } from "@/services/api";
+import { getCases, getTasks, updateCase } from "@/services/api";
 import { supabase } from "@/integrations/supabase/client";
 import { useRole } from "@/hooks/useRole";
 import { calculateRag, RAG_STYLES, STATUS_LABELS, STATUS_STYLES } from "@/lib/caseHelpers";
@@ -34,6 +35,7 @@ const Dashboard = () => {
   const [expandedClients, setExpandedClients] = useState<Set<string>>(new Set());
 
   const { data: cases = [], isLoading } = useQuery({ queryKey: ["cases"], queryFn: getCases });
+  const { data: tasks = [] } = useQuery({ queryKey: ["tasks"], queryFn: () => getTasks() });
 
   // CA team members only see tasks assigned to them (mirrors Zoho CRM
   // ownership). Advisers/paraplanners/admins see everything.
@@ -45,7 +47,7 @@ const Dashboard = () => {
     mutationFn: seedDemoData,
     onSuccess: (r) => {
       qc.invalidateQueries({ queryKey: ["cases"] });
-      toast.success(r.inserted > 0 ? `Loaded ${r.inserted} demo cases` : "Demo cases already loaded");
+      toast.success(r.inserted > 0 ? `Loaded ${r.inserted} starter cases` : "Starter cases already loaded");
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -61,6 +63,14 @@ const Dashboard = () => {
   const inReview = myCases.filter((c) => c.status === "in_review").length;
   const onHold = myCases.filter((c) => c.status === "on_hold").length;
   const active = myCases.filter((c) => !["complete", "approved"].includes(c.status)).length;
+  const activeCaseHours = myCases
+    .filter((c) => !["complete", "approved"].includes(c.status))
+    .map((c) => Math.max(0, today.getTime() - new Date(c.created_at).getTime()) / 36e5);
+  const avgActiveHours = average(activeCaseHours);
+  const completedTaskHours = (tasks as any[])
+    .filter((t) => t.completed && t.created_at && t.updated_at)
+    .map((t) => Math.max(0, new Date(t.updated_at).getTime() - new Date(t.created_at).getTime()) / 36e5);
+  const avgTaskHours = average(completedTaskHours);
 
   const recent = [...myCases]
     .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
