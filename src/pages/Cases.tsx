@@ -104,7 +104,7 @@ const Cases = () => {
       status: "pending_loa",
       owner_name: userName ?? null,
       zoho_task_id: `ZT-${Math.floor(Math.random() * 90000) + 10000}`,
-      case_notes: "Auto-imported from Zoho CRM blueprint task.",
+      case_notes: "Imported from CRM blueprint task.",
       current_stage: 1,
     } as any);
   };
@@ -141,7 +141,7 @@ const Cases = () => {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={simulateZoho} disabled={createMutation.isPending} className="gap-2">
-            <Sparkles className="h-4 w-4 text-teal" /> Simulate Zoho Import
+            <Sparkles className="h-4 w-4 text-teal" /> Import CRM task
           </Button>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
@@ -268,7 +268,7 @@ const Cases = () => {
                 <td colSpan={8} className="px-4 py-12 text-center text-sm text-muted-foreground">
                   {cases.length === 0 ? (
                     <>
-                      No ceding cases yet. Click <strong>+ New Case</strong> to get started, or load demo data from the dashboard.
+                      No ceding cases yet. Click <strong>+ New Case</strong> to get started.
                     </>
                   ) : (
                     <>No cases match your filters.</>
