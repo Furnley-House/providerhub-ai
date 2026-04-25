@@ -37,7 +37,7 @@ const Dashboard = () => {
   const { data: cases = [], isLoading } = useQuery({ queryKey: ["cases"], queryFn: getCases });
   const { data: tasks = [] } = useQuery({ queryKey: ["tasks"], queryFn: () => getTasks() });
 
-  // CA team members only see tasks assigned to them (mirrors Zoho CRM
+  // CA team members only see tasks assigned to them (mirrors CRM
   // ownership). Advisers/paraplanners/admins see everything.
   const myCases = role === "ca_team"
     ? (cases as any[]).filter((c) => (c.owner_name ?? "").trim() === (userName ?? "").trim())
@@ -157,8 +157,8 @@ const Dashboard = () => {
 
   const handlePrepareSR = async (c: any) => {
     if (c.zoho_ceding_status !== "ceding_complete") {
-      toast.error("Zoho hasn't confirmed ceding yet", {
-        description: "Wait for the Zoho CRM blueprint to mark ceding complete.",
+      toast.error("Ceding is not confirmed yet", {
+        description: "Wait for the CRM blueprint to mark ceding complete.",
       });
       return;
     }
@@ -176,10 +176,10 @@ const Dashboard = () => {
         source: "dashboard",
         actor_name: userName,
         actor_role: role,
-        notes: `Triggered SR Preparation blueprint on Zoho task ${c.zoho_task_id ?? "(none)"}`,
+        notes: `Triggered SR Preparation blueprint on task ${c.zoho_task_id ?? "(none)"}`,
       });
       qc.invalidateQueries({ queryKey: ["cases"] });
-      toast.success("SR blueprint triggered", { description: "Opening Zoho task…" });
+      toast.success("SR blueprint triggered", { description: "Opening task…" });
       if (c.zoho_task_id) {
         const taskUrl = `https://crm.zoho.eu/crm/tab/Tasks/${c.zoho_task_id}`;
         window.open(taskUrl, "_blank", "noopener,noreferrer");
@@ -200,7 +200,7 @@ const Dashboard = () => {
     try {
       await new Promise((r) => setTimeout(r, 800));
       qc.invalidateQueries({ queryKey: ["cases"] });
-      toast.success("Synced with Zoho CRM");
+      toast.success("Synced with CRM");
     } finally {
       setSyncing(false);
     }
