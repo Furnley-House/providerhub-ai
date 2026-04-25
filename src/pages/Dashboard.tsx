@@ -627,12 +627,18 @@ const Dashboard = () => {
   );
 };
 
+function average(values: number[]) {
+  if (values.length === 0) return 0;
+  return Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
+}
+
 function KPICard({
   icon: Icon,
   label,
   value,
   sub,
   accent,
+  suffix,
   onClick,
 }: {
   icon: React.ElementType;
@@ -640,6 +646,7 @@ function KPICard({
   value: number;
   sub: string;
   accent: "primary" | "success" | "warning" | "overdue" | "muted";
+  suffix?: string;
   onClick?: () => void;
 }) {
   const iconBg =
@@ -664,7 +671,7 @@ function KPICard({
           <Icon className="h-5 w-5" />
         </div>
         <div>
-          <p className="text-2xl font-bold text-foreground theme-heading leading-none">{value}</p>
+          <p className="text-2xl font-bold text-foreground theme-heading leading-none">{value}{suffix}</p>
           <p className="text-xs text-muted-foreground mt-1">{label}</p>
         </div>
       </div>
