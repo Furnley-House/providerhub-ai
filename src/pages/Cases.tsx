@@ -112,7 +112,7 @@ const Cases = () => {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return cases.filter((c) => {
-      // CA team only sees tasks assigned to them in Zoho CRM.
+      // CA team only sees tasks assigned to them in CRM.
       if (role === "ca_team" && (c.owner_name ?? "").trim() !== (userName ?? "").trim())
         return false;
       if (statusFilter === "active") {
@@ -186,7 +186,7 @@ const Cases = () => {
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="zoho_task_id">Zoho CRM Task ID (optional)</Label>
+                  <Label htmlFor="zoho_task_id">CRM Task ID (optional)</Label>
                   <Input id="zoho_task_id" value={form.zoho_task_id} onChange={(e) => setForm((f) => ({ ...f, zoho_task_id: e.target.value }))} placeholder="e.g. ZT-12345" />
                 </div>
                 <div className="space-y-1.5">
