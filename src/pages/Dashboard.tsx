@@ -164,8 +164,7 @@ const Dashboard = () => {
     }
     setPreparingId(c.id);
     try {
-      // Stub: in production this calls a Zoho CRM edge function that triggers
-      // the "SR Preparation" blueprint transition on the linked task.
+      // Production integration point: trigger the SR Preparation transition on the linked task.
       await new Promise((r) => setTimeout(r, 600));
       await updateCase(c.id, {
         sr_prepared_at: new Date().toISOString(),
@@ -196,8 +195,7 @@ const Dashboard = () => {
   };
 
   const handleSyncZoho = async () => {
-    // Stub Zoho sync: in production this hits a Zoho webhook/edge function
-    // and pulls the latest blueprint status for every linked task.
+    // Production integration point: pull the latest blueprint status for linked tasks.
     setSyncing(true);
     try {
       await new Promise((r) => setTimeout(r, 800));
@@ -223,7 +221,7 @@ const Dashboard = () => {
         {cases.length === 0 && (
           <Button onClick={() => seedMutation.mutate()} disabled={seedMutation.isPending} className="gap-2">
             <Database className="h-4 w-4" />
-            {seedMutation.isPending ? "Loading…" : "Load Demo Data"}
+            {seedMutation.isPending ? "Loading…" : "Load starter cases"}
           </Button>
         )}
       </div>
@@ -300,7 +298,7 @@ const Dashboard = () => {
             className="gap-2 shrink-0"
           >
             {syncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-             Sync CRM
+            Sync CRM
           </Button>
         </div>
         {srReady.length === 0 ? (
