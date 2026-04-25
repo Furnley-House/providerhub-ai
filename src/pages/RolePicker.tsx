@@ -52,10 +52,10 @@ const RolePicker = () => {
       <main className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-5xl">
           <div className="text-center mb-10">
-            <p className="text-xs uppercase tracking-widest text-primary font-semibold mb-2">Demo · SSO Simulation</p>
+            <p className="text-xs uppercase tracking-widest text-primary font-semibold mb-2">Role access</p>
             <h1 className="text-3xl font-bold theme-heading text-foreground mb-2">Select your role to continue</h1>
             <p className="text-sm text-muted-foreground max-w-xl mx-auto">
-              In production, your role will be detected automatically via SSO. For this prototype, choose the role you'd like to experience.
+              Choose the operational view you need for today.
             </p>
           </div>
 
@@ -92,7 +92,7 @@ const RolePicker = () => {
       </main>
 
       <footer className="border-t border-border bg-card px-8 py-3 text-center text-[11px] text-muted-foreground">
-        Data retained for 12 months per FH policy · Prototype build · © Furnley House Financial Planning Partners
+        Data retained for 12 months per FH policy · © Furnley House Financial Planning Partners
       </footer>
     </div>
   );
