@@ -27,7 +27,7 @@ const App = () => (
       <RoleProvider>
         <TooltipProvider>
           <Toaster />
-          <Sonner />
+          <Sonner position="bottom-left" closeButton />
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<RolePicker />} />
