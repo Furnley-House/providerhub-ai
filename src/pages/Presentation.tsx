@@ -384,6 +384,31 @@ const Presentation = () => {
     }
   };
 
+  const downloadPPTX = async () => {
+    if (exporting || !exportRef.current) return;
+    setExporting(true);
+    toast.loading("Generating PPTX…", { id: "pptx-export" });
+    try {
+      const pptx = new PptxGenJS();
+      pptx.layout = "LAYOUT_WIDE"; // 13.333 x 7.5 in (16:9)
+      pptx.title = "ProviderHub Presentation";
+      const nodes = exportRef.current.querySelectorAll<HTMLDivElement>("[data-slide-export]");
+      for (let i = 0; i < nodes.length; i++) {
+        const canvas = await html2canvas(nodes[i], { scale: 1, useCORS: true, backgroundColor: "#ffffff", width: 1920, height: 1080 });
+        const img = canvas.toDataURL("image/jpeg", 0.92);
+        const slide = pptx.addSlide();
+        slide.addImage({ data: img, x: 0, y: 0, w: 13.333, h: 7.5 });
+      }
+      await pptx.writeFile({ fileName: "ProviderHub-Presentation.pptx" });
+      toast.success("PPTX downloaded", { id: "pptx-export" });
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to generate PPTX", { id: "pptx-export" });
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const SlideComponent = slides[current];
 
   return (
@@ -415,6 +440,9 @@ const Presentation = () => {
         <div className="flex items-center gap-4">
           <button onClick={downloadPDF} disabled={exporting} className="flex items-center gap-1 hover:text-white transition-colors disabled:opacity-50" title="Download as PDF">
             <Download className="w-4 h-4" /> {exporting ? "Exporting…" : "PDF"}
+          </button>
+          <button onClick={downloadPPTX} disabled={exporting} className="flex items-center gap-1 hover:text-white transition-colors disabled:opacity-50" title="Download as PPTX">
+            <Download className="w-4 h-4" /> PPTX
           </button>
           <button onClick={toggleFullscreen} className="hover:text-white transition-colors">
             {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
