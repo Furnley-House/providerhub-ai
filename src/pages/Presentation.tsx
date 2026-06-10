@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import PptxGenJS from "pptxgenjs";
 import { toast } from "sonner";
 
 // Metrics
