@@ -366,13 +366,13 @@ const Presentation = () => {
     setExporting(true);
     toast.loading("Generating PDF…", { id: "pdf-export" });
     try {
-      const pdf = new jsPDF({ orientation: "landscape", unit: "px", format: [1920, 1080] });
+      const pdf = new jsPDF({ orientation: "landscape", unit: "px", format: [1280, 720] });
       const nodes = exportRef.current.querySelectorAll<HTMLDivElement>("[data-slide-export]");
       for (let i = 0; i < nodes.length; i++) {
-        const canvas = await html2canvas(nodes[i], { scale: 1, useCORS: true, backgroundColor: "#ffffff", width: 1920, height: 1080 });
+        const canvas = await html2canvas(nodes[i], { scale: 2, useCORS: true, backgroundColor: "#ffffff", width: 1280, height: 720 });
         const img = canvas.toDataURL("image/jpeg", 0.92);
-        if (i > 0) pdf.addPage([1920, 1080], "landscape");
-        pdf.addImage(img, "JPEG", 0, 0, 1920, 1080);
+        if (i > 0) pdf.addPage([1280, 720], "landscape");
+        pdf.addImage(img, "JPEG", 0, 0, 1280, 720);
       }
       pdf.save("ProviderHub-Presentation.pdf");
       toast.success("PDF downloaded", { id: "pdf-export" });
@@ -394,7 +394,7 @@ const Presentation = () => {
       pptx.title = "ProviderHub Presentation";
       const nodes = exportRef.current.querySelectorAll<HTMLDivElement>("[data-slide-export]");
       for (let i = 0; i < nodes.length; i++) {
-        const canvas = await html2canvas(nodes[i], { scale: 1, useCORS: true, backgroundColor: "#ffffff", width: 1920, height: 1080 });
+        const canvas = await html2canvas(nodes[i], { scale: 2, useCORS: true, backgroundColor: "#ffffff", width: 1280, height: 720 });
         const img = canvas.toDataURL("image/jpeg", 0.92);
         const slide = pptx.addSlide();
         slide.addImage({ data: img, x: 0, y: 0, w: 13.333, h: 7.5 });
@@ -421,9 +421,9 @@ const Presentation = () => {
         </div>
       </div>
       {/* Off-screen export container — fixed 1920x1080 per slide */}
-      <div ref={exportRef} aria-hidden style={{ position: "fixed", left: -100000, top: 0, width: 1920, pointerEvents: "none" }}>
+      <div ref={exportRef} aria-hidden style={{ position: "fixed", left: -100000, top: 0, width: 1280, pointerEvents: "none" }}>
         {slides.map((S, i) => (
-          <div key={i} data-slide-export style={{ width: 1920, height: 1080, overflow: "hidden" }}>
+          <div key={i} data-slide-export style={{ width: 1280, height: 720, overflow: "hidden" }}>
             <S />
           </div>
         ))}
