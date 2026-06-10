@@ -1,9 +1,12 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ChevronLeft, ChevronRight, Maximize, Minimize, X,
-  FileText, Phone, Clock, Shield, Cpu, TrendingDown, ArrowDown, Users, CheckCircle, Zap
+  FileText, Phone, Clock, Shield, Cpu, TrendingDown, ArrowDown, Users, CheckCircle, Zap, Download
 } from "lucide-react";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
+import { toast } from "sonner";
 
 // Metrics
 const manual = { callAvg: 45, pdfExtract: 15, transcriptReview: 7.5, contextSwitch: 7.5, repeatCalls: 3 };
@@ -329,6 +332,8 @@ const Presentation = () => {
   const navigate = useNavigate();
   const [current, setCurrent] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const exportRef = useRef<HTMLDivElement>(null);
   const total = slides.length;
 
   const next = useCallback(() => setCurrent(c => Math.min(c + 1, total - 1)), [total]);
@@ -355,6 +360,29 @@ const Presentation = () => {
     else document.documentElement.requestFullscreen?.();
   };
 
+  const downloadPDF = async () => {
+    if (exporting || !exportRef.current) return;
+    setExporting(true);
+    toast.loading("Generating PDF…", { id: "pdf-export" });
+    try {
+      const pdf = new jsPDF({ orientation: "landscape", unit: "px", format: [1920, 1080] });
+      const nodes = exportRef.current.querySelectorAll<HTMLDivElement>("[data-slide-export]");
+      for (let i = 0; i < nodes.length; i++) {
+        const canvas = await html2canvas(nodes[i], { scale: 1, useCORS: true, backgroundColor: "#ffffff", width: 1920, height: 1080 });
+        const img = canvas.toDataURL("image/jpeg", 0.92);
+        if (i > 0) pdf.addPage([1920, 1080], "landscape");
+        pdf.addImage(img, "JPEG", 0, 0, 1920, 1080);
+      }
+      pdf.save("ProviderHub-Presentation.pdf");
+      toast.success("PDF downloaded", { id: "pdf-export" });
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to generate PDF", { id: "pdf-export" });
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const SlideComponent = slides[current];
 
   return (
@@ -366,6 +394,14 @@ const Presentation = () => {
           </div>
         </div>
       </div>
+      {/* Off-screen export container — fixed 1920x1080 per slide */}
+      <div ref={exportRef} aria-hidden style={{ position: "fixed", left: -100000, top: 0, width: 1920, pointerEvents: "none" }}>
+        {slides.map((S, i) => (
+          <div key={i} data-slide-export style={{ width: 1920, height: 1080, overflow: "hidden" }}>
+            <S />
+          </div>
+        ))}
+      </div>
       <div className="h-12 bg-black/90 flex items-center justify-between px-4 text-white/70 text-sm">
         <button onClick={() => navigate("/")} className="flex items-center gap-1 hover:text-white transition-colors">
           <X className="w-4 h-4" /> Exit
@@ -375,9 +411,14 @@ const Presentation = () => {
           <span className="font-medium">{current + 1} / {total}</span>
           <button onClick={next} disabled={current === total - 1} className="disabled:opacity-30 hover:text-white transition-colors"><ChevronRight className="w-5 h-5" /></button>
         </div>
-        <button onClick={toggleFullscreen} className="hover:text-white transition-colors">
-          {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
-        </button>
+        <div className="flex items-center gap-4">
+          <button onClick={downloadPDF} disabled={exporting} className="flex items-center gap-1 hover:text-white transition-colors disabled:opacity-50" title="Download as PDF">
+            <Download className="w-4 h-4" /> {exporting ? "Exporting…" : "PDF"}
+          </button>
+          <button onClick={toggleFullscreen} className="hover:text-white transition-colors">
+            {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+          </button>
+        </div>
       </div>
     </div>
   );
